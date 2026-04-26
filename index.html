@@ -2331,6 +2331,12 @@ let touch={active:false,mode:'',lastDist:0,lastMid:{x:0,y:0},
 
 cvs.addEventListener('touchstart',e=>{
   e.preventDefault();
+  // ペイントモード優先
+  if(paintMode && e.touches.length===1){
+    const fakeEvt = {clientX:e.touches[0].clientX, clientY:e.touches[0].clientY};
+    paintMouseDown(fakeEvt);
+    return;
+  }
   const t=e.touches;
   touch.moved=false;
   if(t.length===1){
@@ -2386,6 +2392,12 @@ cvs.addEventListener('touchstart',e=>{
 
 cvs.addEventListener('touchmove',e=>{
   e.preventDefault();
+  // ペイントモード優先
+  if(paintMode && e.touches.length===1){
+    const fakeEvt = {clientX:e.touches[0].clientX, clientY:e.touches[0].clientY};
+    paintMouseMove(fakeEvt);
+    return;
+  }
   if(!touch.active)return;
   const t=e.touches;
   if(t.length===1&&touch.mode!=='pinch'){
@@ -2424,6 +2436,12 @@ cvs.addEventListener('touchmove',e=>{
 
 cvs.addEventListener('touchend',e=>{
   e.preventDefault();
+  // ペイントモード優先
+  if(paintMode){
+    const fakeEvt = {clientX: e.changedTouches[0]?.clientX||0, clientY: e.changedTouches[0]?.clientY||0};
+    paintMouseUp(fakeEvt);
+    return;
+  }
   if(touch.mode==='extra-port')renderPortList();
   // 選択判定はスマホでは無効
   if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;}
