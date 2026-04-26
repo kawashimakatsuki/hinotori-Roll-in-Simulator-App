@@ -185,7 +185,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 /* 横向き対応 */
 @media(orientation:landscape) and (max-height:500px){
   #sp-wrap{ height:90px; }
-  #sp-modebar{ bottom:8px; left:8px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
+  #sp-modebar{ bottom:8px; left:60px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
   .sp-mb{ padding:5px 8px; font-size:10px; }
   #sp-dpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
   #sp-rotpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
@@ -585,9 +585,9 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <h3>❓ 操作ガイド</h3>
     <table class="help-tbl">
       <tr><th colspan="2">👆 タッチ操作（画面上）</th></tr>
-      <tr><td>1本指ドラッグ</td><td>モードに応じてOU移動 / 台移動 / OU回転</td></tr>
+      <tr><td>1本指ドラッグ</td><td>モードに応じてOU移動 / 台移動 / OU回転 / 視点スクロール</td></tr>
       <tr><th colspan="2" style="padding-top:10px">🎛 モード切替（画面左下）</th></tr>
-      <tr><td>🖐 視点移動</td><td>右側の矢印パッドで視点をスクロール</td></tr>
+      <tr><td>🖐 視点移動</td><td>1本指ドラッグで視点をスクロール。矢印パッドでも操作可</td></tr>
       <tr><td>🔷 OU移動</td><td>1本指ドラッグ または 矢印パッドでOUを移動</td></tr>
       <tr><td>🏥 台移動</td><td>1本指ドラッグ または 矢印パッドで手術台を移動</td></tr>
       <tr><td>🔄 OU回転</td><td>↺↻ボタンでOU回転。微調整（0.5°）/ 大回転（10°）切替可</td></tr>
@@ -596,7 +596,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
       <tr><td>🎯 ビューリセット</td><td>表示位置・ズームを初期状態に戻す</td></tr>
       <tr><td>🔄 初期設定</td><td>全項目を初期設定値に戻す</td></tr>
       <tr><td>↩ Undo</td><td>直前の操作を取り消す</td></tr>
-      <tr><td>＋ / － ズーム</td><td>ビューを拡大・縮小（中心位置は現在の表示中心）</td></tr>
+      <tr><td>＋ / －</td><td>ビューを拡大・縮小</td></tr>
       <tr><td>📏 距離計測</td><td>計測モードON → 1点目タップ → 2点目タップで距離を表示。もう一度タップでリセット</td></tr>
       <tr><td>📍 ポート追加</td><td>モードON → キャンバスをタップしてポートを配置。サイドバーでラベル・色・サイズを設定</td></tr>
       <tr><td>🖊 ペイント</td><td>点・テキスト・消しゴムで書き込み。Undoで取り消し可</td></tr>
