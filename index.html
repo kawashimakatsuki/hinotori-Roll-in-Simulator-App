@@ -41,15 +41,15 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 16
 .sidebar-scroll::-webkit-scrollbar-thumb{background:var(--muted);border-radius:4px}
 .sidebar-scroll::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 @media(max-width:768px){
-  .sidebar{position:fixed;top:0;left:0;height:100%;z-index:9500;transform:translateX(-100%);width:min(290px,85vw);padding-top:env(safe-area-inset-top)}
+  .sidebar{position:fixed;top:0;left:0;height:100%;z-index:99000;transform:translateX(-100%);width:min(290px,85vw);padding-top:env(safe-area-inset-top)}
   .sidebar.open{transform:translateX(0)}
-  .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9499}
+  .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:98999}
   .drawer-overlay.show{display:block}
   .drawer-toggle{display:flex!important}
   .status-row{flex-wrap:wrap;gap:8px;font-size:10px}
   .status-row span{white-space:nowrap}
 }
-@media(min-width:769px){
+@media(min-width:769px) and (min-height:601px){
   .drawer-toggle{display:none!important}
   .drawer-overlay{display:none!important}
 }
@@ -185,10 +185,10 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 /* 横向き対応 */
 @media(orientation:landscape) and (max-height:500px){
   #sp-wrap{ height:90px; }
-  #sp-modebar{ bottom:8px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:45vw; }
+  #sp-modebar{ bottom:8px; left:max(56px, calc(8px + env(safe-area-inset-left, 0px))); flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
   .sp-mb{ padding:5px 8px; font-size:10px; }
-  #sp-dpad{ bottom:8px; }
-  #sp-rotpad{ bottom:8px; }
+  #sp-dpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
+  #sp-rotpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
   .sp-btn{ width:44px; height:44px; font-size:20px; }
   .sp-blank{ width:44px; height:44px; }
   .sp-center{ width:44px; height:44px; font-size:9px; }
@@ -891,7 +891,20 @@ function resize(){
   render();
 }
 window.addEventListener('resize',resize);
-window.addEventListener('orientationchange',()=>{setTimeout(resize,200);});
+window.addEventListener('orientationchange',()=>{
+  setTimeout(()=>{
+    resize();
+    // 横向きになったらサイドバーを閉じる
+    const sb=document.querySelector('.sidebar');
+    const ov=$('drawer-overlay');
+    if(sb && sb.classList.contains('open')){
+      sb.classList.remove('open');
+      if(ov) ov.classList.remove('show');
+      const sw=document.getElementById('sp-wrap');
+      if(sw) sw.style.display='block';
+    }
+  },200);
+});
 
 // ====== Undo スタック ======
 const STATE_STACK = [];
