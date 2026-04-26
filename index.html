@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>hinotori ロールインシミュレーター</title>
+<meta name="description" content="手術支援ロボットhinotoriオペレーションユニットのロールインシミュレーション">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="hinotori">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#13131f">
+<style>
+:root{
+  --bg:#0a0a12;--surf:#13131f;--surf2:#1a1a2a;--border:#252538;
+  --accent:#00d4ff;--accent2:#7c3aed;--text:#e2e8f0;--muted:#5a6480;
+  --ou:#3b82f6;--tbl:#94a3b8;--cam:#00d4ff;--port:#f97316;
+  --ok:#22c55e;--warn:#eab308;--ng:#ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+}
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;overflow:hidden;position:relative;z-index:10000;}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-name{font-size:15px;font-weight:700;letter-spacing:.5px}
+.logo-sub{font-size:10px;color:var(--muted)}
+.hdr-btns{display:flex;gap:6px}
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+.sidebar{width:290px;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;min-height:0;transition:transform .25s ease}
+.sidebar-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:200px}
+.sidebar-scroll::-webkit-scrollbar{width:8px}
+.sidebar-scroll::-webkit-scrollbar-track{background:var(--bg)}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:var(--muted);border-radius:4px}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+@media(max-width:768px){
+  .sidebar{position:fixed;top:0;left:0;height:100%;z-index:9500;transform:translateX(-100%);width:min(290px,85vw);padding-top:env(safe-area-inset-top)}
+  .sidebar.open{transform:translateX(0)}
+  .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9499}
+  .drawer-overlay.show{display:block}
+  .drawer-toggle{display:flex!important}
+  .status-row{flex-wrap:wrap;gap:8px;font-size:10px}
+  .status-row span{white-space:nowrap}
+}
+@media(min-width:769px){
+  .drawer-toggle{display:none!important}
+  .drawer-overlay{display:none!important}
+}
+.drawer-toggle{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);min-width:0;min-height:0;}
+canvas{display:block;cursor:grab}
+canvas.grab{cursor:grabbing}
+canvas.measure{cursor:crosshair}
+canvas.add-port{cursor:copy}
+canvas.paint{cursor:crosshair}
+canvas.paint-dot{cursor:cell}
+canvas.paint-erase{cursor:cell}
+canvas.paint-text{cursor:text}
+canvas.paint{cursor:crosshair}
+canvas.paint-dot{cursor:cell}
+canvas.paint-erase{cursor:cell}
+canvas.paint-text{cursor:text}
+.status{background:var(--surf);border-top:1px solid var(--border);padding:0;display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:10000;}
+.status-row{padding:5px 14px;display:flex;gap:20px;align-items:center;font-size:11px;color:var(--muted)}
+.status-row2{border-top:1px solid var(--border);background:rgba(0,212,255,0.04)}
+.dist-badge{font-weight:700;font-size:13px;padding:1px 8px;border-radius:4px;border:1px solid currentColor}
+.info-badge{font-weight:700;font-size:13px;padding:1px 8px;border-radius:4px;border:1px solid var(--accent);color:var(--accent)}
+.sec{border-bottom:1px solid var(--border)}
+.sec-hd{padding:9px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);user-select:none;transition:color .2s}
+.sec-hd:hover{color:var(--text)}
+.sec-hd .arr{font-size:9px;transition:transform .2s}
+.sec-hd.open .arr{transform:rotate(90deg)}
+.sec-bd{padding:0 10px 10px;display:none}
+.sec-bd.open{display:block}
+.f{margin-bottom:8px}
+.f label{display:block;font-size:10px;color:var(--muted);margin-bottom:2px}
+.f input[type=number],.f input[type=text],.f select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 7px;font-size:12px;outline:none;transition:border-color .2s}
+.f input:focus,.f select:focus{border-color:var(--accent)}
+.row{display:flex;gap:6px}
+.row .f{flex:1}
+.f input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+.f input[type=checkbox]{accent-color:var(--accent)}
+.rv{font-size:11px;color:var(--accent);float:right}
+.slider-row{display:flex;align-items:center;gap:6px}
+.slider-row input[type=range]{flex:1;min-width:0}
+.slider-row input[type=number]{width:62px;flex-shrink:0;text-align:right;padding:3px 5px;font-size:11px}
+.btn{padding:5px 11px;border-radius:5px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-acc{background:linear-gradient(135deg,var(--accent),#008faa);border-color:transparent;color:#000;font-weight:700}
+.btn-acc:hover{opacity:.85;color:#000}
+.btn-sm{padding:3px 8px;font-size:10px}
+.btn-del{border-color:#ef4444;color:#ef4444}
+.btn-del:hover{background:#ef444420}
+.btn-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.btn-active{border-color:#facc15!important;color:#facc15!important}
+
+/* 手術台プリセット */
+.tbl-preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px}
+.tbl-preset-btn{padding:5px 4px;border-radius:5px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-size:10px;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3}
+.tbl-preset-btn:hover{border-color:var(--tbl);color:var(--tbl)}
+.tbl-preset-btn.active{border-color:#94a3b8;color:#94a3b8;background:rgba(148,163,184,0.1)}
+
+/* 追加ポートリスト */
+.port-item{display:flex;align-items:center;gap:4px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.port-item:last-child{border-bottom:none}
+.port-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.port-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.port-list{max-height:160px;overflow-y:auto;margin-top:5px}
+
+/* キーボード移動ステータス */
+.kbd-hint{font-size:10px;color:var(--muted);margin-top:4px;background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:4px;padding:4px 7px}
+.kbd-key{display:inline-block;background:var(--surf2);border:1px solid var(--muted);border-radius:3px;padding:0px 4px;font-size:10px;color:var(--text);font-weight:600;margin:0 1px}
+
+.pr-item{display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.pr-item:last-child{border-bottom:none}
+.pr-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-list{max-height:140px;overflow-y:auto;margin-top:5px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999999;display:none}
+.modal-bg.show{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:20px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h3{margin-bottom:14px;font-size:14px}
+.modal input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;margin-bottom:12px}
+.modal input:focus{border-color:var(--accent)}
+.modal .btn-row{justify-content:flex-end}
+hr.sep{border:none;border-top:1px solid var(--border);margin:8px 0}
+.help-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.help-tbl td,.help-tbl th{padding:5px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+.help-tbl th{color:var(--accent);font-size:11px;font-weight:600;background:rgba(0,212,255,0.06);letter-spacing:.5px}
+.help-tbl td:first-child{white-space:nowrap;color:var(--text);font-weight:600;width:44%}
+.help-tbl td:last-child{color:var(--muted)}
+
+/* === スマホUI追加 === */
+
+#sp-rotpad {
+  position:absolute;bottom:90px;right:8px;
+  display:none;
+  pointer-events:auto;
+}
+#sp-rotpad.sp-show { display:block; }
+.sp-rot-btn:active { background:rgba(167,139,250,0.3) !important; border-color:#a78bfa !important; }
+
+/* 画面全体を確実に収める */
+html { overflow: hidden !important; }
+body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
+* { box-sizing: border-box; }
+
+@media(max-width:900px){
+  .logo-sub { display:none; }
+  .logo-name { font-size:12px; }
+  /* ヘッダーを確実に1行に収める */
+  header { height:44px !important; padding:0 8px !important; flex-wrap:nowrap !important; overflow:hidden !important; }
+  .logo { gap:6px; flex-shrink:0; }
+  .logo-icon { width:26px; height:26px; font-size:13px; flex-shrink:0; }
+  /* ヘッダーボタンエリアをスクロール可能に */
+  .hdr-btns { 
+    flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden;
+    gap:3px; max-width:calc(100vw - 140px);
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .hdr-btns::-webkit-scrollbar { display:none; }
+  .hdr-btns .btn { padding:4px 7px; font-size:10px; min-height:32px; white-space:nowrap; flex-shrink:0; }
+  /* サイドバー */
+  .sidebar { width: min(290px, 88vw) !important; }
+  /* statusバー */
+  .status-row { font-size:10px; padding:4px 8px; gap:6px; flex-wrap:wrap; }
+  .dist-badge { font-size:12px; padding:1px 6px; }
+  .canvas-wrap { min-height: 0; }
+  .main { overflow: hidden; }
+}
+#sp-wrap{
+  position:fixed;bottom:0;left:0;right:0;
+  height:180px;
+  pointer-events:none;
+  z-index:8000;
+}
+#sp-modebar{
+  position:absolute;bottom:90px;left:8px;
+  display:flex;flex-direction:column;gap:4px;
+  pointer-events:auto;
+  z-index:8001;
+}
+.sp-mb{
+  padding:8px 11px;
+  background:rgba(10,10,18,0.95);
+  border:2px solid #3a3a5c;
+  border-radius:10px;
+  color:#e2e8f0;font-size:11px;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;
+}
+.sp-mb.sp-on{border-color:#00d4ff;color:#00d4ff;background:rgba(0,212,255,0.15);}
+#sp-dpad{
+  position:absolute;bottom:90px;right:8px;
+  display:none;
+  flex-direction:column;align-items:center;gap:3px;
+  pointer-events:auto;
+}
+#sp-dpad.sp-show{display:flex;}
+.sp-row{display:flex;gap:3px;}
+.sp-btn{
+  width:56px;height:56px;
+  background:rgba(10,10,18,0.95);
+  border:2px solid #3a3a5c;border-radius:12px;
+  color:#e2e8f0;font-size:26px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;
+}
+.sp-btn:active{background:rgba(0,212,255,0.3);border-color:#00d4ff;}
+.sp-center{
+  width:56px;height:56px;
+  background:rgba(10,10,18,0.7);border:2px solid #252538;border-radius:12px;
+  color:#5a6480;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4;
+}
+.sp-blank{width:56px;height:56px;}
+
+#sp-info{
+  position:fixed;top:58px;left:50%;transform:translateX(-50%);
+  background:rgba(0,212,255,0.15);border:1px solid #00d4ff;
+  border-radius:20px;padding:4px 16px;
+  color:#00d4ff;font-size:11px;
+  display:none;white-space:nowrap;pointer-events:none;
+  z-index:8001;
+}
+#sp-info.sp-show{display:block;}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon" style="overflow:hidden;padding:0;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAALQ0lEQVR4nJWXa5AU13XHf/d2z6PnubvsMLvL7gJiWd4CiYdxQLAIcElY2HpQMkJBxiUpkl1SrFckWZESyyqXSxUVToRiJ3ESpypllVKOYzAycZVUASwksdrIEImVWBZYYJ8zyz7m2TPT3ffmwwxrKeUvOVW363bfuueePuee8/8fMTmV10IIlFKUy2WkgGDQj89nYpgGUgiqIgA9M/c8DyEEQoBWGmlI/pBorXE9D9dxKZUqeAoCgSBSVvWKqemC9jwP2y5SVxclHLYQiD+obEZpzZz/r2g0hYLN9HQOywpjGBJTayiVbBKJegJ+P0ortNa/3yWqf66VRmuFUhrT5+PgwYMcO3YMjWbb1m3s3LmTilNBColhGDMOEwi0AGo6I+EQfp/J+NVpQqEIDA2ldCab1Vpr7bqu9jxvZriepx3H0ZVKRX9OlNJ79+7Vg4OD+vLly3rfvn36/0qlUtEVx9HuZ/R5nqdd19Vaa53N5vTgUEqbSivC4TCuqsZUodFao5TC5/NhSBOAkdER3nrrLT795FNS6RTxeJzW1lYAAsEg999/P4lEgqXLlrFt2zZampsBUGgcx0FKiRQSLcBVHqFIiEy2gEilJ3RjYz1KKdCgtMbvqx6ay+c5fvw47544QbFY5Avr17Nt61Zy+Tzfe/FFduy4FQ0c+fURXnzpe4SCFm+//TY9PT1YIYuNGzayafNmopEIABXHnbl8UkomJqYQE5PTui4exfMUUkoMQ9LT08OJEydIpVLMmzefdevW0dTcxPDwEGOjo7iux8ULF+k7ew6tNR2dC+hc1IkhDea0ttLS0sLY6Cjd3R8wMHCR5uZmNmzYwNq1a/GUwvM8DMMgk8kjJqeyOhoJo5TCcSq88sorFItFFi7soL6+gYmJCQYGBsjncyyY10G8Pk7AF+TS6AUGU5eRUrJq0VqCvgBKw/h4istXLhOLRZk3fz6zGmYxOTVJf38/ISvEU089hc/nR0pJPl/AFAI8zyMQ8HHi3Xc5fPhX7Ny5k4GBS0xnMnQu7GTr9m0smDef353roSGW4Or0KHMKSS5cacT0GSxo7WR2IkHRtqmPbaJ9djvnL17kk95e+vv7mZqaIhQKcejgITZ3ddG1eRPlsgMCTHQ1r7WGWQ0NdHYu4sEH/4TZs5OY5ueLy28++gWdjSv58PJxvvXlP2fzmi0A/Ns7/8L/DHZjVwosaltOe7KdjgXX0bHgumrsKy7j42n6zvaRSMzms1luXisqdqnM8uXLiEaj+Px+hBSMj08wOjrK2Ngo/f39jF9wKEU+pZi1+IeL/0g0EsZxXaanp/GZJgjBiQ8/5FLPGB0dHbS1tdPY2EgymUAaJrFYjCWLF2HbJQzTAA0mWqPReJ6HlH62bdvOk088Qbwuzsn3T2JZQc6fP8/X932DXbt2ce+ePay+8QaGR0bo7u5m7ty53LRxI8eOHeOrt9/BPffsZnQ0xXdf/C4lu0h9/SwaG2cRDFrcccedAHhKIZWB1iAmJqa1FQqiVdUvfr+f8fGrpNNpHnroAbbefDOnT59GIzhy5Nc8/PA36T3zMdFoDJ/fx6lTp1i7Zg1jY2O0trXxs5+9jmkaPPDAg3iuQ9G2MUyT1w4cIByJ4bouApBSULTLSK0F2hMoJdBKUCyWaZyVYMGCBVhWiNOnTuM4Lq5b4Sc/+Sf279/P+vUbmJqewrIsHnnk22gE9Q0NFAoFhoZGUcrDqbik02nKpTJDg4NEInEqZQftgfKonQdSa12rfgqlFUJAwS5i+kxeffUAoUgUw2ewZOlSstkcoZDFo99+jOXLl9OUTLJ48RLuu28fixZ10tTURKlUQinBM88+w+hYivR4GiEEZ/vOEQwG8bRCoVG6WnGl1hqURiuqQ2sMISkVy6xYsYyXX/4rAv4AQ1cGaUw0orUmn8szt30uXV1dDA0NojVcv+J6FnYsZOLqBK6rWbp0MY8/9iTxeBzLspBCojxVTTdFDdw0pta/t+YaglXRUFAqeYyNpdh00yba29qYnM7ieR7hcIhCoUClUqFYLBCNRjnffxYpBbl8DsMwcF2FPxDgnt27SafHSaVSLF68CGVrpKjmvgbktcMVCk95KKWovikQAiEERbtIJpvFMAxM06S+vgGlNeFQmKJtY1khPM8lHq8jk8kgRDXGkWiEbDaHkIJiMT9DXqpBqHngGlFQSuP3+/E8r3pThagapqsgZRiSgl3ihRf+gi1btlNf38B0ZppcLkc0FiU9Pg4IpOFHSHAdD8sK4TgVGmfNIpPJgqiio9RiJtymUhrPU/h9PkZGhonFYsRicTLTGfx+P67jEggEqKur45OzPRw+9Et+e/w4QkosK8i8edcRDkf46KOPSSQa2by5Ea3BqVSIx+IMj4ySy+VINlWhW3kKgUBJVaVynucSCoU42f0+d935Fb6x7z6GhgZpbmkkGgmQSCQ4euwo//zTn9LW1saaNWvIZjPMaWmhrbW1yhtMg0QiQcm2yeVzaA2u5xGJRug718eZ3l5UjU25njvDuqoh0OA4DnX1DUQjUUJWgH1f/2P23LuXlpZmurs/IBwO09DQQDLZxOUrVygUiwghCEfCeErQ3t5CLpfj5Mn3Wb5iFRqq/AIIWSHsUrFW6ASRaJRKuVy7axophKBQyLNq5Uo2dW1heGSEFcuW8vxzz/Cb/3yTuW0t3LBqFcPDw4wMD3H99avIZDIcPXaU+fM7ee47z/Pe+//N1NQky5Yt48u37aRYKFIul2lvn0sgaLHjllsZHh7Etkv819tvYds2Usoqv1Ra4ZM+rl6d4OmnnyOXzXLkyJt0benizJlekrObiMaizJt/HXV1DZw7d5Z0Os0tt+7ggQcfwvNcDrz6Qy5dGuCePXu58cbVpNNppJQ4jsO99+7lR6/9NRcHBujt7aW392O2b7+F/T/8G7LZLKZWGrSucQI/X9u9hx//+G/JZDJs3LiJ9Rs2EbIsbrstyZzWVrq73yUUup0Dr/0dpZJNX18fb7zxOgC7dt1NPl9A1jJICEE4HOZXhw+zZOlSDAnhcJgvfvGPqFQqoAXS0wpPC0BSKNjE6xrYsHET9fUNfPX2O7ltx5dYufIG6upnIQ2TNWu+wIUL57FLZRASywqxevVaXvr+y3QsXESxaKOFBFHlfM8++2esW7uWpUsWc3HgEo88+gR37foa2VwepEBWKm6VkCCoVBySyWb+45dvcvT4e7zzzm/5znMvYJo+EIJ8rsCGm7pobZtLZjpDLBbi8OFD/OljT/L8c09TyBcAgVNxsawwvkCQ/nPn+KCnB6Ul//r6v7Pr7t2kx8cR0qBcdpCVchmUvtZF4DgVbNvG5/Nz4LW/xx8I8vjjj1CpVPCUR8ucOTz8zUfp6TlJOj3J4NAgXV03c2kwjZASYUgaEwn6+j7l+y/9JTeuXsPadev5wcv7aW5uYXJyAsM00FrjVEqI3506o0ORGKFQaKbfg1rJ1IpksolDB3/BJ71nePhbj+J5HqVSifP952hrbyedTrN8+Qps28YwDOxikZ///A16z3zMXbvu5qbNW3AdB6UUrusihUQaErtoU8hnEOf6L+nJiUmSzS0YPh+e636OB3qeRzxex/TUJEJW2y4hBH6/H8dxME2TcrkMgGVZnDz5HuOpFF+5/S5M06hhQ60RFQLDMPA8j9ToCA0N9YjRsQl9dXycyalpEskmwuFw1QOfYY5KqWq/V/uua73iNbyQUs6s+f0BgsEg2Wzmc2vXjCgUClxNp6iri9PY2Ii4OpHVtm2TTqfJZXP4AwHC4Qj+QAApZW1jFadnwnPNOFF71KBcUG3ztdYYhlEzFpTnUSmXKRaLlMs2kUiEZDKJZVn8L1LE+ENSNoeQAAAAAElFTkSuQmCC" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" /></div>
+    <div>
+      <div class="logo-name">hinotori Roll-In Simulator</div>
+      <div class="logo-sub">Operation Unit Positioning</div>
+    </div>
+  </div>
+  <div class="hdr-btns">
+    <button class="drawer-toggle" onclick="toggleDrawer()" title="設定">☰</button>
+    <button class="btn" id="undo-btn" onclick="undoState()" title="一個前の状態に戻す" disabled>↩ Undo</button>
+    <button class="btn" onclick="resetToInitial()" title="初期設定に戻す" style="border-color:#f97316;color:#f97316;">🔄 初期設定</button>
+    <button class="btn" onclick="resetView()" title="ビューをリセット">🎯 ビューリセット</button>
+    <button class="btn" onclick="zoomStep(1.25)" title="拡大">＋</button>
+    <button class="btn" onclick="zoomStep(0.8)" title="縮小">－</button>
+    <button class="btn" onclick="alignOU()" title="OUをカメラポートに自動整列">⚡ 自動整列</button>
+    <button class="btn" id="measure-btn" onclick="toggleMeasure()" title="2点間距離を計測">📏 距離計測</button>
+    <button class="btn" id="add-port-btn" onclick="toggleAddPortMode()" title="追加ポートを配置">📍 ポート追加</button>
+    <button class="btn" id="paint-btn" onclick="togglePaintMode()" title="ペイント">🖊 ペイント</button>
+    <button class="btn" onclick="openHelpModal()" title="操作方法">❓ ヘルプ</button>
+  </div>
+</header>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+<div class="main">
+  <div class="sidebar">
+  <div class="sidebar-scroll">
+
+    <div class="sec">
+      <div class="sec-hd open" onclick="toggleSec(this)"><span>🔷 オペレーションユニット</span><span class="arr">▶</span></div>
+      <div class="sec-bd open">
+        <div class="row">
+          <div class="f"><label>幅 (mm)</label><input type="number" id="ou-w" value="970" min="100" max="3000" oninput="render()"></div>
+          <div class="f"><label>奥行 (mm)</label><input type="number" id="ou-d" value="1150" min="100" max="4000" oninput="render()"></div>
+        </div>
+        <div class="f"><label>回転軸：前方頂点からの距離 (mm)</label><input type="number" id="ou-piv" value="560" min="0" max="3000" oninput="render()"></div>
+        <div class="f"><label>OU角度 (°)</label>
+          <div class="slider-row">
+            <input type="range" id="ou-ang" min="-180" max="180" step="0.5" value="45" oninput="onOUAngle()">
+            <input type="number" id="ou-ang-num" min="-180" max="180" step="0.5" value="45" oninput="onOUAngleNum()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="f"><label>X位置 (mm)</label><input type="number" id="ou-x" value="1103" oninput="render()"></div>
+          <div class="f"><label>Y位置 (mm)</label><input type="number" id="ou-y" value="-1886" oninput="render()"></div>
+        </div>
+        <div class="kbd-hint">
+          💡 <kbd class="kbd-key">W</kbd><kbd class="kbd-key">A</kbd><kbd class="kbd-key">S</kbd><kbd class="kbd-key">D</kbd> キーでOU移動 |
+          Shift+ドラッグ: OU移動 | Alt+ホイール: 回転
+        </div>
+        <div class="f" style="margin-top:6px"><label>キーボード移動量 (mm/step)</label><input type="number" id="kbd-step" value="10" min="1" max="200" oninput=""></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>📷 ポジショニングカメラ</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="f"><label>アームベース旋回角度 (°)</label>
+          <div class="slider-row">
+            <input type="range" id="arm-sw" min="-180" max="180" step="0.5" value="0" oninput="onArmSwivel();checkHiddenArm()">
+            <input type="number" id="arm-sw-num" min="-180" max="180" step="0.5" value="0" oninput="onArmSwivelNum()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="f"><label>アームベース中心 X (mm)</label><input type="number" id="arm-x" value="550" oninput="render()"></div>
+          <div class="f"><label>アームベース中心 Y (mm)</label><input type="number" id="arm-y" value="1200" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="f"><label>アームベース 幅 (mm)</label><input type="number" id="arm-bw" value="330" min="50" max="400" oninput="render()"></div>
+          <div class="f"><label>アームベース 長さ (mm)</label><input type="number" id="arm-bh" value="1000" min="100" max="1000" oninput="render()"></div>
+        </div>
+        <div class="row">
+          <div class="f"><label>カメラ Xオフセット (mm)</label><input type="number" id="cam-x" value="0" oninput="render()"></div>
+          <div class="f"><label>カメラ Yオフセット (mm)</label><input type="number" id="cam-y" value="0" oninput="render()"></div>
+        </div>
+        <hr class="sep">
+        <div class="f"><label><input type="checkbox" id="show-guide" checked onchange="render()"> ガイド線を表示</label></div>
+        <div class="f"><label>ガイド線 角度オフセット (°)</label>
+          <div class="slider-row">
+            <input type="range" id="gl-ang" min="-180" max="180" step="0.5" value="90" oninput="onGuideAngle()">
+            <input type="number" id="gl-ang-num" min="-180" max="180" step="0.5" value="90" oninput="onGuideAngleNum()">
+          </div>
+        </div>
+        <div class="f"><label>ガイド線 長さ (mm)</label><input type="number" id="gl-len" value="5000" min="100" max="15000" oninput="render()"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>💾 プリセット</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="f"><label>プリセット名</label><input type="text" id="pr-name" placeholder="例: 右アプローチ 頭低位15°"></div>
+        <div class="btn-row">
+          <button class="btn btn-acc btn-sm" onclick="savePreset()">💾 保存</button>
+          <button class="btn btn-sm" onclick="renderPresetList()">🔄</button>
+        </div>
+        <div class="pr-list" id="pr-list"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>🏥 手術台</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <!-- 手術台プリセット -->
+        <div class="f">
+          <label>手術台プリセット</label>
+          <div class="tbl-preset-grid" id="tbl-preset-grid">
+            <!-- JS で生成 -->
+          </div>
+          <div style="display:flex;gap:4px;margin-top:2px">
+            <button class="btn btn-sm" style="flex:1" onclick="openSaveTblPresetModal()">＋ 現在の寸法を保存</button>
+            <button class="btn btn-sm btn-del" onclick="deleteActiveTblPreset()" id="del-tbl-preset-btn" style="display:none">✕ 削除</button>
+          </div>
+        </div>
+        <hr class="sep">
+        <div class="row">
+          <div class="f"><label>幅 (mm)</label><input type="number" id="tbl-w" value="560" min="100" max="2000" oninput="onTblDimChange()"></div>
+          <div class="f"><label>長さ (mm)</label><input type="number" id="tbl-d" value="1800" min="100" max="4000" oninput="onTblDimChange()"></div>
+        </div>
+        <div class="f"><label>角度 (°)</label>
+          <div class="slider-row">
+            <input type="range" id="tbl-ang" min="-180" max="180" step="0.5" value="-45" oninput="onTableAngle()">
+            <input type="number" id="tbl-ang-num" min="-180" max="180" step="0.5" value="-45" oninput="onTableAngleNum()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="f"><label>X位置 (mm)</label><input type="number" id="tbl-x" value="0" oninput="render()"></div>
+          <div class="f"><label>Y位置 (mm)</label><input type="number" id="tbl-y" value="0" oninput="render()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>🎯 カメラポート</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="row">
+          <div class="f"><label>台中心から X (mm)</label><input type="number" id="port-x" value="0" oninput="render()"></div>
+          <div class="f"><label>台中心から Y (mm)</label><input type="number" id="port-y" value="0" oninput="render()"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">💡 Ctrl+ドラッグ: カメラポート移動</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>📍 追加ポート</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">
+          ヘッダーの「📍 ポート追加」ボタンを押してキャンバス上をクリックすると追加できます。
+        </div>
+        <div class="f">
+          <label>ポートラベル</label>
+          <input type="text" id="new-port-label" placeholder="例: 右鉗子ポート" value="">
+        </div>
+        <div class="row">
+          <div class="f">
+            <label>ポート色</label>
+            <select id="new-port-color" onchange="">
+              <option value="#a855f7">紫</option>
+              <option value="#22c55e">緑</option>
+              <option value="#ef4444">赤</option>
+              <option value="#eab308">黄</option>
+              <option value="#ec4899">ピンク</option>
+              <option value="#14b8a6">ティール</option>
+              <option value="#f97316">オレンジ</option>
+              <option value="#60a5fa">水色</option>
+            </select>
+          </div>
+          <div class="f">
+            <label>サイズ (mm径)</label>
+            <input type="number" id="new-port-size" value="12" min="5" max="30">
+          </div>
+        </div>
+        <div class="port-list" id="port-list"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>📐 傾斜補正</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="f"><label>傾斜種別</label>
+          <select id="tilt-type" onchange="render()">
+            <option value="none">なし（水平）</option>
+            <option value="trend">頭低位（Trendelenburg）</option>
+            <option value="rev">頭高位（Reverse Trendelenburg）</option>
+          </select>
+        </div>
+        <div class="f"><label>傾斜角度 (°)</label>
+          <div class="slider-row">
+            <input type="range" id="tilt-ang" min="0" max="45" step="0.5" value="0" oninput="onTiltAngle()">
+            <input type="number" id="tilt-ang-num" min="0" max="45" step="0.5" value="0" oninput="onTiltAngleNum()">
+          </div>
+        </div>
+        <div class="f"><label>テーブルトップ底面〜カメラポート腹壁 高さ (mm)</label><input type="number" id="port-h" value="5000" min="0" max="600" oninput="render()"></div>
+        <div id="tilt-info" style="font-size:10px;color:var(--accent);margin-top:3px"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>⚙️ 表示設定</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="f"><label>許容範囲 直径 (mm)</label><input type="number" id="tol" value="50" min="1" max="200" oninput="render()"></div>
+        <div class="f"><label><input type="checkbox" id="show-grid" checked onchange="render()"> グリッド表示 (100mm)</label></div>
+        <div class="f"><label><input type="checkbox" id="show-dims" checked onchange="render()"> 寸法ラベル表示</label></div>
+        <div class="f"><label><input type="checkbox" id="show-rollin" checked onchange="render()"> ロールイン角表記</label></div>
+        <div class="f"><label>ロールイン角 矢印の長さ (px)</label><input type="number" id="rollin-arrow-len" value="100" min="10" max="300" oninput="render()"></div>
+        <div class="f"><label>背景色</label>
+          <select id="bg-mode" onchange="changeBG()">
+            <option value="dark">ダーク</option>
+            <option value="light" selected>ライト</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div><!-- /.sidebar-scroll -->
+  </div><!-- /.sidebar -->
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+</div>
+
+<div class="status">
+  <div class="status-row">
+    <span>📏 距離:</span>
+    <span class="dist-badge" id="dist-badge">—</span>
+    <span id="dist-txt">カメラとポートの距離を計測中...</span>
+    <span style="margin-left:auto">スケール: <span id="scale-txt">—</span></span>
+    <span>OU角度: <span id="ou-ang-s">0.0°</span></span>
+    <span>カメラ: <span id="cam-pos-s">—</span></span>
+  </div>
+  <div class="status-row status-row2">
+    <span>🤖 ロールイン角度:</span>
+    <span class="info-badge" id="rollin-badge">—</span>
+    <span style="margin-left:16px">📐 ガイド線／手術台:</span>
+    <span class="info-badge" id="rel-ang-badge">—</span>
+    <span id="rel-ang-txt">—</span>
+    <span style="margin-left:auto">🏥 手術台角度: <span id="tbl-ang-s">0.0°</span></span>
+    <span>📐 傾斜: <span id="tilt-s">なし</span></span>
+  </div>
+  <div class="status-row" id="measure-row" style="display:none;background:rgba(250,204,21,0.07);border-top:1px solid var(--border)">
+    <span style="color:#facc15;font-weight:600">📏 距離計測モード</span>
+    <span id="measure-txt" style="color:var(--muted)">クリックで1点目を指定してください</span>
+    <span class="dist-badge" id="measure-badge" style="display:none;color:#facc15;border-color:#facc15">—</span>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="clearMeasure()">✕ 計測クリア</button>
+  </div>
+  <div class="status-row" id="add-port-row" style="display:none;background:rgba(168,85,247,0.07);border-top:1px solid var(--border)">
+    <span style="color:#a855f7;font-weight:600">📍 ポート追加モード</span>
+    <span style="color:var(--muted)">キャンバス上をクリックしてポートを配置してください</span>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="toggleAddPortMode()">✕ 終了</button>
+  </div>
+  <div id="paint-row" style="display:none;border-top:1px solid var(--border);background:rgba(34,197,94,0.04);">
+    <!-- 1行目：ツール + Undo/クリア/終了 -->
+    <div style="padding:5px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <span style="color:#22c55e;font-weight:700;font-size:11px;letter-spacing:.5px;flex-shrink:0">🖊 ペイント</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        
+        
+        
+        
+        <button class="btn btn-sm" id="pt-dot"   onclick="setPaintTool('dot')">● 点</button>
+        <button class="btn btn-sm" id="pt-text"  onclick="setPaintTool('text')">Ａ テキスト</button>
+        <button class="btn btn-sm" id="pt-erase" onclick="setPaintTool('erase')">🧹 消しゴム</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="undoPaint()" title="Ctrl+Z">↩ Undo</button>
+        <button class="btn btn-sm btn-del" onclick="clearPaint()">🗑 全消去</button>
+        <button class="btn btn-sm" onclick="togglePaintMode()">✕ 終了</button>
+      </div>
+    </div>
+    <!-- 2行目：色 + 太さ + 線スタイル -->
+    <div style="padding:5px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <!-- カラーパレット -->
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--muted);margin-right:2px">色</span>
+        <div id="paint-palette" style="display:flex;gap:3px;flex-wrap:wrap;max-width:200px"></div>
+        <input type="color" id="paint-color" value="#ff4444" title="カスタム色"
+          style="width:22px;height:22px;border:2px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;flex-shrink:0"
+          oninput="onPickerColor(this.value)" onchange="onPickerColor(this.value)">
+        <span id="paint-color-hex" style="font-size:10px;color:var(--accent);font-family:monospace;min-width:52px">#ff4444</span>
+      </div>
+      <!-- 太さ -->
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--muted)">太さ</span>
+        <div id="paint-size-presets" style="display:flex;gap:3px;align-items:center"></div>
+        <input type="range" id="paint-size" min="1" max="60" value="3"
+          style="width:80px;accent-color:#22c55e;cursor:pointer;flex-shrink:0"
+          oninput="onPaintSizeSlider(this.value)">
+        <input type="number" id="paint-size-num" value="3" min="1" max="60"
+          style="width:42px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 4px;font-size:11px;text-align:right"
+          oninput="onPaintSizeNum(this.value)">
+        <span style="font-size:10px;color:var(--muted)">px</span>
+      </div>
+      <!-- 線スタイル -->
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--muted)">線種</span>
+        <button class="btn btn-sm" id="ps-solid" onclick="setPaintDash('solid')" title="実線">—</button>
+        <button class="btn btn-sm" id="ps-dash"  onclick="setPaintDash('dash')"  title="破線">- -</button>
+        <button class="btn btn-sm" id="ps-dot2"  onclick="setPaintDash('dot2')"  title="点線">···</button>
+      </div>
+      <!-- 不透明度 -->
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--muted)">透明度</span>
+        <input type="range" id="paint-alpha" min="10" max="100" value="100"
+          style="width:70px;accent-color:#22c55e;cursor:pointer"
+          oninput="$('paint-alpha-val').textContent=this.value+'%';updatePaintPreview()">
+        <span id="paint-alpha-val" style="font-size:10px;color:#22c55e;min-width:32px">100%</span>
+      </div>
+      <!-- プレビュー -->
+      <canvas id="paint-preview" width="60" height="22" style="border:1px solid var(--border);border-radius:4px;flex-shrink:0;background:transparent"></canvas>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Defaults Modal -->
+
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-bg" id="help-modal">
+  <div class="modal" style="width:420px;max-height:90vh;overflow-y:auto">
+    <h3>❓ 操作ガイド</h3>
+    <table class="help-tbl">
+      <tr><th colspan="2">👆 タッチ操作（画面上）</th></tr>
+      <tr><td>1本指ドラッグ</td><td>モードに応じてOU移動 / 台移動 / OU回転</td></tr>
+      <tr><th colspan="2" style="padding-top:10px">🎛 モード切替（画面左下）</th></tr>
+      <tr><td>🖐 視点移動</td><td>右側の矢印パッドで視点をスクロール</td></tr>
+      <tr><td>🔷 OU移動</td><td>1本指ドラッグ または 矢印パッドでOUを移動</td></tr>
+      <tr><td>🏥 台移動</td><td>1本指ドラッグ または 矢印パッドで手術台を移動</td></tr>
+      <tr><td>🔄 OU回転</td><td>↺↻ボタンでOU回転。微調整（0.5°）/ 大回転（10°）切替可</td></tr>
+      <tr><th colspan="2" style="padding-top:10px">⚡ ヘッダーボタン</th></tr>
+      <tr><td>⚡ 自動整列</td><td>カメラがポートに重なるよう OU を自動移動</td></tr>
+      <tr><td>🎯 ビューリセット</td><td>表示位置・ズームを初期状態に戻す</td></tr>
+      <tr><td>🔄 初期設定</td><td>全項目を初期設定値に戻す</td></tr>
+      <tr><td>↩ Undo</td><td>直前の操作を取り消す</td></tr>
+      <tr><td>＋ / － ズーム</td><td>ビューを拡大・縮小（中心位置は現在の表示中心）</td></tr>
+      <tr><td>📏 距離計測</td><td>計測モードON → 1点目タップ → 2点目タップで距離を表示。もう一度タップでリセット</td></tr>
+      <tr><td>📍 ポート追加</td><td>モードON → キャンバスをタップしてポートを配置。サイドバーでラベル・色・サイズを設定</td></tr>
+      <tr><td>🖊 ペイント</td><td>点・テキスト・消しゴムで書き込み。Undoで取り消し可</td></tr>
+      <tr><th colspan="2" style="padding-top:10px">🏥 手術台プリセット</th></tr>
+      <tr><td>プリセットボタン</td><td>タップで手術台の寸法を適用。「＋ 現在の寸法を保存」で登録</td></tr>
+    </table>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-acc" onclick="closeHelpModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 手術台プリセット保存モーダル -->
+<div class="modal-bg" id="tbl-preset-modal">
+  <div class="modal">
+    <h3>🏥 手術台プリセットを保存</h3>
+    <input type="text" id="tbl-preset-name" placeholder="例: TS7000dV / メイン手術台" value="">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+      現在の寸法: <span id="tbl-preset-dim-preview" style="color:var(--accent)">—</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeSaveTblPresetModal()">キャンセル</button>
+      <button class="btn btn-acc" onclick="doSaveTblPreset()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const cvs=document.getElementById('c'),ctx=cvs.getContext('2d');
+const $=id=>document.getElementById(id);
+const gv=id=>parseFloat($(id).value)||0;
+const gc=id=>$(id).checked;
+const d2r=a=>a*Math.PI/180;
+let VIEW={sc:0.077,px:0,py:0};
+
+function rot(x,y,a){const c=Math.cos(a),s=Math.sin(a);return{x:x*c-y*s,y:x*s+y*c};}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function w2c(wx,wy){return{x:cvs.width/2+VIEW.px+wx*VIEW.sc,y:cvs.height/2+VIEW.py-wy*VIEW.sc};}
+function c2w(cx,cy){return{x:(cx-cvs.width/2-VIEW.px)/VIEW.sc,y:-(cy-cvs.height/2-VIEW.py)/VIEW.sc};}
+
+// ====== 追加ポート ======
+let extraPorts = []; // {id, label, color, size, x, y} ワールド座標
+let addPortMode = false;
+let nextPortId = 1;
+let dragPortId = null; // ドラッグ中のポートID
+
+function toggleAddPortMode(){
+  addPortMode = !addPortMode;
+  const btn = $('add-port-btn');
+  const row = $('add-port-row');
+  if(addPortMode){
+    btn.classList.add('btn-active');
+    row.style.display = 'flex';
+    cvs.classList.add('add-port');
+    // 計測モードは終了
+    if(measureMode) toggleMeasure();
+  } else {
+    btn.classList.remove('btn-active');
+    row.style.display = 'none';
+    cvs.classList.remove('add-port');
+  }
+}
+
+function renderPortList(){
+  const el = $('port-list');
+  if(!extraPorts.length){
+    el.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 0">追加ポートなし</div>';
+    return;
+  }
+  el.innerHTML = extraPorts.map(p=>`
+    <div class="port-item">
+      <div class="port-color-dot" style="background:${p.color}"></div>
+      <span class="port-item-label" title="${p.label}">${p.label||'ポート'}</span>
+      <span style="font-size:10px;color:var(--muted)">(${p.x.toFixed(0)},${p.y.toFixed(0)})</span>
+      <button class="btn btn-sm btn-del" onclick="removeExtraPort(${p.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeExtraPort(id){
+  extraPorts = extraPorts.filter(p=>p.id!==id);
+  renderPortList();
+  render();
+}
+
+function drawExtraPorts(dark){
+  extraPorts.forEach(p=>{
+    const pc = w2c(p.x, p.y);
+    const r = Math.max(6, (p.size||12)/2 * VIEW.sc);
+    // 円
+    ctx.beginPath(); ctx.arc(pc.x, pc.y, r, 0, Math.PI*2);
+    ctx.fillStyle = p.color+'33';
+    ctx.fill();
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // 中心点
+    ctx.beginPath(); ctx.arc(pc.x, pc.y, 3, 0, Math.PI*2);
+    ctx.fillStyle = p.color; ctx.fill();
+    // ラベル
+    if(p.label){
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = p.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(p.label, pc.x, pc.y - r - 2);
+    }
+    // 座標ラベル
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`(${p.x.toFixed(0)},${p.y.toFixed(0)})`, pc.x, pc.y + r + 2);
+  });
+}
+
+function getExtraPortAt(wx, wy){
+  // クリック位置から半径内のポートを返す（逆順＝最後に追加したものを優先）
+  const hitR = 20 / VIEW.sc; // ヒット半径 20px
+  for(let i = extraPorts.length-1; i >= 0; i--){
+    const p = extraPorts[i];
+    if(Math.hypot(wx-p.x, wy-p.y) <= hitR) return p;
+  }
+  return null;
+}
+
+// ====== 手術台プリセット ======
+const TBL_BUILTIN = [
+  {name:'TS7000dV',    w:601,  d:1248, builtin:true},
+  {name:'AlphaClassic',w:530,  d:2000, builtin:true},
+  {name:'Maquet 1150', w:560,  d:2100, builtin:true},
+  {name:'Trumpf TruSystem 7500', w:570, d:2020, builtin:true},
+];
+let activeTblPresetName = 'TS7000dV';
+
+function loadTblPresets(){
+  const user = JSON.parse(localStorage.getItem('hinotori_tbl_presets')||'[]');
+  return [...TBL_BUILTIN, ...user];
+}
+function saveUserTblPreset(name, w, d){
+  const user = JSON.parse(localStorage.getItem('hinotori_tbl_presets')||'[]');
+  const idx = user.findIndex(p=>p.name===name);
+  const entry = {name, w, d, builtin:false};
+  if(idx>=0) user[idx]=entry; else user.push(entry);
+  localStorage.setItem('hinotori_tbl_presets', JSON.stringify(user));
+}
+function deleteUserTblPreset(name){
+  const user = JSON.parse(localStorage.getItem('hinotori_tbl_presets')||'[]');
+  const filtered = user.filter(p=>p.name!==name);
+  localStorage.setItem('hinotori_tbl_presets', JSON.stringify(filtered));
+}
+
+function renderTblPresetGrid(){
+  const presets = loadTblPresets();
+  const grid = $('tbl-preset-grid');
+  grid.innerHTML = presets.map(p=>`
+    <button class="tbl-preset-btn${p.name===activeTblPresetName?' active':''}"
+      onclick="applyTblPreset('${p.name.replace(/'/g,"\\'")}')">
+      <div style="font-weight:700">${p.name}</div>
+      <div style="color:var(--muted)">${p.w}×${p.d}mm</div>
+    </button>
+  `).join('');
+  // 削除ボタン表示（ユーザー定義かつアクティブなら表示）
+  const active = presets.find(p=>p.name===activeTblPresetName);
+  $('del-tbl-preset-btn').style.display = (active && !active.builtin) ? 'inline-block' : 'none';
+}
+
+function applyTblPreset(name){
+  const presets = loadTblPresets();
+  const p = presets.find(pr=>pr.name===name);
+  if(!p) return;
+  activeTblPresetName = name;
+  $('tbl-w').value = p.w;
+  $('tbl-d').value = p.d;
+  renderTblPresetGrid();
+  render();
+}
+
+function onTblDimChange(){
+  // 寸法を手動変更したらアクティブプリセットを解除
+  activeTblPresetName = '';
+  renderTblPresetGrid();
+  render();
+}
+
+function openSaveTblPresetModal(){
+  $('tbl-preset-name').value = '';
+  $('tbl-preset-dim-preview').textContent = `${gv('tbl-w')} × ${gv('tbl-d')} mm`;
+  $('tbl-preset-modal').classList.add('show');
+  setTimeout(()=>$('tbl-preset-name').focus(), 100);
+}
+function closeSaveTblPresetModal(){$('tbl-preset-modal').classList.remove('show');}
+function doSaveTblPreset(){
+  const name = $('tbl-preset-name').value.trim();
+  if(!name){alert('プリセット名を入力してください');return;}
+  // ビルトインと同名は禁止
+  if(TBL_BUILTIN.some(p=>p.name===name)){alert('そのプリセット名はビルトインと同名のため使えません');return;}
+  saveUserTblPreset(name, gv('tbl-w'), gv('tbl-d'));
+  activeTblPresetName = name;
+  renderTblPresetGrid();
+  closeSaveTblPresetModal();
+}
+
+function deleteActiveTblPreset(){
+  if(!activeTblPresetName) return;
+  if(!confirm(`「${activeTblPresetName}」を削除しますか？`)) return;
+  deleteUserTblPreset(activeTblPresetName);
+  activeTblPresetName = '';
+  renderTblPresetGrid();
+}
+
+$('tbl-preset-modal').addEventListener('click',e=>{if(e.target===$('tbl-preset-modal'))closeSaveTblPresetModal();});
+
+// ====== キーボードでOU移動 ======
+const keysDown = new Set();
+let kbdInterval = null;
+let heldH = false;
+
+document.addEventListener('keydown', e=>{
+  // Ctrl+Z でペイントundo
+  if((e.ctrlKey||e.metaKey) && e.key==='z'){ undoPaint(); return; }
+  // テキスト入力中は無視
+  const tag = document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  const key = e.key.toUpperCase();
+  if(key==='H') heldH = true;
+  if(['W','A','S','D'].includes(key)){
+    e.preventDefault();
+    if(!keysDown.has(key)){
+      keysDown.add(key);
+      if(!kbdInterval) kbdInterval = setInterval(applyKbdMove, 50);
+    }
+  }
+});
+document.addEventListener('keyup', e=>{
+  const key = e.key.toUpperCase();
+  if(key==='H') heldH = false;
+  keysDown.delete(key);
+  if(keysDown.size===0 && kbdInterval){
+    clearInterval(kbdInterval);
+    kbdInterval = null;
+  }
+});
+
+function applyKbdMove(){
+  const step = parseFloat($('kbd-step').value)||10;
+  let localX=0, localY=0;
+  if(keysDown.has('W')) localY += step;
+  if(keysDown.has('S')) localY -= step;
+  if(keysDown.has('D')) localX += step;
+  if(keysDown.has('A')) localX -= step;
+  if(localX===0 && localY===0) return;
+  if(heldH) activateWings();
+  const ouA = d2r(gv('ou-ang'));
+  const world = rot(localX, localY, ouA);
+  $('ou-x').value = (gv('ou-x') + world.x).toFixed(1);
+  $('ou-y').value = (gv('ou-y') + world.y).toFixed(1);
+  render();
+}
+
+// ====== カメラ・ポート ======
+function getCam(){
+  const sw=d2r(gv('arm-sw')),ouA=d2r(gv('ou-ang'));
+  const bx=gv('arm-x'),by=gv('arm-y'),cx=gv('cam-x'),cy=gv('cam-y');
+  const co=rot(cx,cy,sw);
+  const loc=rot(bx+co.x,by+co.y,ouA);
+  return{x:gv('ou-x')+loc.x,y:gv('ou-y')+loc.y};
+}
+
+function getPort(corr=true){
+  const ox=gv('port-x'),oy=gv('port-y');
+  let dy=0;
+  if(corr){
+    const tt=$('tilt-type').value,ta=d2r(gv('tilt-ang')),h=gv('port-h');
+    if(tt==='trend')dy=h*Math.tan(ta);
+    if(tt==='rev')dy=-h*Math.tan(ta);
+  }
+  const r=rot(ox,oy+dy,d2r(gv('tbl-ang')));
+  return{x:gv('tbl-x')+r.x,y:gv('tbl-y')+r.y};
+}
+
+function getGuideAngleWorld(){
+  const ouA=gv('ou-ang'),sw=gv('arm-sw'),ga=gv('gl-ang');
+  return d2r(ouA+sw+ga);
+}
+
+function resize(){
+  const wrap=cvs.parentElement;
+  const w=wrap.clientWidth||window.innerWidth;
+  const h=wrap.clientHeight||window.innerHeight;
+  if(w>0&&h>0){cvs.width=w;cvs.height=h;}
+  render();
+}
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',()=>{setTimeout(resize,200);});
+
+// ====== Undo スタック ======
+const STATE_STACK = [];
+const STATE_MAX   = 50;
+let   _lastStateJSON = '';
+let   _stateTimer    = null;
+
+function pushState(){
+  const json = JSON.stringify(getPresetData());
+  if(json === _lastStateJSON) return;      // 変化なしなら積まない
+  _lastStateJSON = json;
+  STATE_STACK.push(json);
+  if(STATE_STACK.length > STATE_MAX) STATE_STACK.shift();
+  updateUndoBtn();
+}
+
+function updateUndoBtn(){
+  const btn = $('undo-btn');
+  if(!btn) return;
+  btn.disabled = STATE_STACK.length <= 1;
+  btn.title = STATE_STACK.length > 1
+    ? `一個前の状態に戻す（${STATE_STACK.length - 1} ステップ保存中）`
+    : '一個前の状態に戻す';
+}
+
+function undoState(){
+  if(STATE_STACK.length <= 1) return;
+  STATE_STACK.pop();                        // 現在状態を捨てる
+  const json = STATE_STACK[STATE_STACK.length - 1];
+  _lastStateJSON = json;
+  applyPresetData(JSON.parse(json));        // render() は applyPresetData 内で呼ばれる
+  updateUndoBtn();
+}
+
+
+
+// ====== DRAW ======
+function render(){
+  // 状態をデバウンスでスタックに積む
+  clearTimeout(_stateTimer);
+  _stateTimer = setTimeout(pushState, 300);
+
+  const W=cvs.width,H=cvs.height;
+  const dark=$('bg-mode').value==='dark';
+  ctx.fillStyle=dark?'#0a0a12':'#eef0f5';
+  ctx.fillRect(0,0,W,H);
+  if(gc('show-grid'))drawGrid(dark);
+  drawAxes(dark);
+  drawTable(dark);
+  drawOU(dark);
+  if(gc('show-guide'))drawGuide(dark);
+  const cam=getCam(),port=getPort(),portRaw=getPort(false);
+  const tType=$('tilt-type').value;
+  if(tType!=='none'&&gv('tilt-ang')>0)drawTiltLine(portRaw,port,dark);
+  drawTolCircle(port,dark);
+  drawPortMarker(port,portRaw,dark);
+  drawExtraPorts(dark);
+  drawRollinAngle(dark);
+  drawMeasure(dark);
+  drawPaintStrokes(dark);
+  const d=dist(cam,port);
+  updateStatus(d,cam);
+  updateTiltInfo(portRaw,port);
+}
+
+function drawGrid(dark){
+  const step=100*VIEW.sc;
+  if(step<4)return;
+  const ox=cvs.width/2+VIEW.px,oy=cvs.height/2+VIEW.py;
+  ctx.strokeStyle=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.07)';
+  ctx.lineWidth=1;ctx.beginPath();
+  for(let x=(ox%step+step)%step;x<cvs.width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,cvs.height);}
+  for(let y=(oy%step+step)%step;y<cvs.height;y+=step){ctx.moveTo(0,y);ctx.lineTo(cvs.width,y);}
+  ctx.stroke();
+  if(step>25){
+    ctx.fillStyle=dark?'rgba(255,255,255,0.2)':'rgba(0,0,0,0.25)';
+    ctx.font='9px sans-serif';ctx.textAlign='center';
+    const wo=c2w(0,0);
+    const x0=Math.ceil(wo.x/100)*100;
+    for(let wx=x0;wx<wo.x+cvs.width/VIEW.sc;wx+=100){
+      const cp=w2c(wx,0);if(cp.x>30&&cp.x<cvs.width-10)ctx.fillText(wx,cp.x,cvs.height-4);
+    }
+    ctx.textAlign='right';
+    const y0=Math.floor(wo.y/100)*100;
+    for(let wy=y0;wy>wo.y-cvs.height/VIEW.sc;wy-=100){
+      const cp=w2c(0,wy);if(cp.y>10&&cp.y<cvs.height-10)ctx.fillText(wy,30,cp.y+3);
+    }
+  }
+}
+
+function drawAxes(dark){
+  const o=w2c(0,0);
+  ctx.strokeStyle=dark?'rgba(100,100,200,0.25)':'rgba(0,0,150,0.15)';
+  ctx.lineWidth=1;ctx.setLineDash([5,5]);ctx.beginPath();
+  ctx.moveTo(o.x,0);ctx.lineTo(o.x,cvs.height);
+  ctx.moveTo(0,o.y);ctx.lineTo(cvs.width,o.y);
+  ctx.stroke();ctx.setLineDash([]);
+}
+
+// ====== 🔮 隠しコマンド ======
+let wingsActive = false;
+let wingsTimer  = null;
+let fanfareShown = false;
+
+function checkHiddenArm(){
+  if(!heldH) return;
+  showFanfare();
+}
+
+function showFanfare(){
+  if(fanfareShown) return;
+  fanfareShown = true;
+  const el = document.createElement('div');
+  el.id = 'fanfare-toast';
+  el.textContent = '🎵 テレレ レレ テレレ レレ 🎵';
+  Object.assign(el.style,{
+    position:'fixed', top:'50%', left:'50%',
+    transform:'translate(-50%,-50%) scale(0.6)',
+    background:'linear-gradient(135deg,#7c3aed,#00d4ff)',
+    color:'#fff', fontWeight:'900',
+    fontSize:'clamp(20px,4vw,36px)',
+    padding:'20px 40px', borderRadius:'16px',
+    boxShadow:'0 0 60px rgba(0,212,255,0.6)',
+    zIndex:'9999', whiteSpace:'nowrap',
+    opacity:'0', transition:'opacity 0.25s, transform 0.35s cubic-bezier(.34,1.56,.64,1)',
+    pointerEvents:'none', letterSpacing:'2px',
+    textShadow:'0 2px 8px rgba(0,0,0,0.4)',
+  });
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{
+    el.style.opacity='1';
+    el.style.transform='translate(-50%,-50%) scale(1)';
+  });
+  setTimeout(()=>{
+    el.style.opacity='0';
+    el.style.transform='translate(-50%,-50%) scale(0.7)';
+    setTimeout(()=>{ el.remove(); fanfareShown=false; }, 400);
+  }, 2800);
+}
+
+function activateWings(){
+  if(wingsActive) return;
+  wingsActive = true;
+  clearTimeout(wingsTimer);
+  wingsTimer = setTimeout(()=>{ wingsActive=false; render(); }, 5000);
+  render();
+}
+
+function drawWings(ctx, bx, by, bw, bh, sc){
+  const wingW = bw * 1.8;
+  const wingH = bh * 0.7;
+  const cy    = by + bh * 0.3;
+  const t     = Date.now() / 800;
+  const flap  = Math.sin(t) * 0.08;
+  const sway  = Math.sin(t * 1.3) * 0.04;
+
+  ctx.save();
+
+  // 右の翼
+  ctx.save();
+  ctx.translate(bx + bw, cy);
+  ctx.rotate(flap);
+  _drawWing(ctx, wingW, wingH, false);
+  ctx.restore();
+
+  // 左の翼
+  ctx.save();
+  ctx.translate(bx, cy);
+  ctx.rotate(-flap);
+  ctx.scale(-1, 1);
+  _drawWing(ctx, wingW, wingH, true);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function _drawWing(ctx, ww, wh, isLeft){
+  const t = Date.now() / 1000;
+
+  // ---- 光彩（背景グロー）----
+  const glow = ctx.createRadialGradient(ww*0.3, -wh*0.2, 0, ww*0.3, -wh*0.2, ww*0.9);
+  glow.addColorStop(0,   'rgba(255,200,80,0.18)');
+  glow.addColorStop(0.5, 'rgba(255,100,20,0.08)');
+  glow.addColorStop(1,   'rgba(255,50,0,0)');
+  ctx.beginPath();
+  ctx.ellipse(ww*0.35, -wh*0.15, ww*0.85, wh*0.65, 0, 0, Math.PI*2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // ---- 大羽根（primary feathers）8枚 ----
+  const primCount = 8;
+  for(let i = 0; i < primCount; i++){
+    const fi   = i / (primCount - 1);
+    // 羽根の付け根位置（後縁に沿って並ぶ）
+    const rx   = ww * (0.18 + fi * 0.72);
+    const ry   = _bez(wh*0.12, wh*0.28, wh*0.32, wh*0.18, fi);
+    // 羽根の長さと角度
+    const len  = wh * (0.85 - fi * 0.22);
+    const ang  = -1.2 + fi * 0.55 + Math.sin(t + i*0.4) * 0.025;
+    const curl = len * 0.35;
+
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(ang);
+
+    // 羽根1枚の形
+    const fw = len * 0.28;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-fw*0.3, -len*0.3,  -fw*0.15, -len*0.75,  0,       -len);
+    ctx.bezierCurveTo( fw*0.5, -len*0.8,   fw*0.55, -len*0.4,   fw*0.2,   0);
+    ctx.closePath();
+
+    // 火の鳥カラー: 根元オレンジ→先端黄白・発光
+    const fg = ctx.createLinearGradient(0, 0, 0, -len);
+    fg.addColorStop(0,    'rgba(220, 80,  10, 0.92)');
+    fg.addColorStop(0.35, 'rgba(255,150,  20, 0.88)');
+    fg.addColorStop(0.7,  'rgba(255,220,  80, 0.82)');
+    fg.addColorStop(1,    'rgba(255,255, 200, 0.70)');
+    ctx.fillStyle = fg;
+    ctx.fill();
+
+    // 縁の輝き
+    ctx.strokeStyle = 'rgba(255,240,160,0.55)';
+    ctx.lineWidth   = 0.9;
+    ctx.stroke();
+
+    // 羽軸
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(fw*0.08, -len*0.5, 0, -len);
+    ctx.strokeStyle = 'rgba(255,255,180,0.7)';
+    ctx.lineWidth   = 1.1;
+    ctx.stroke();
+
+    // 炎の先端（先端をほんのり発光）
+    const tipGlow = ctx.createRadialGradient(0, -len, 0, 0, -len, fw*1.2);
+    tipGlow.addColorStop(0,   'rgba(255,255,220,0.55)');
+    tipGlow.addColorStop(1,   'rgba(255,180,50,0)');
+    ctx.beginPath();
+    ctx.arc(0, -len, fw*1.2, 0, Math.PI*2);
+    ctx.fillStyle = tipGlow;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---- 中羽根（secondary feathers）6枚 ----
+  const secCount = 6;
+  for(let i = 0; i < secCount; i++){
+    const fi  = i / (secCount - 1);
+    const rx  = ww * (0.08 + fi * 0.52);
+    const ry  = _bez(-wh*0.02, -wh*0.12, -wh*0.18, -wh*0.08, fi);
+    const len = wh * (0.58 - fi * 0.15);
+    const ang = -1.45 + fi * 0.35 + Math.sin(t*0.9 + i*0.5) * 0.02;
+    const fw  = len * 0.32;
+
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(ang);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-fw*0.25, -len*0.3, -fw*0.1, -len*0.72,  0,      -len);
+    ctx.bezierCurveTo( fw*0.45, -len*0.75, fw*0.5,  -len*0.35,  fw*0.15, 0);
+    ctx.closePath();
+
+    const sg = ctx.createLinearGradient(0, 0, 0, -len);
+    sg.addColorStop(0,   'rgba(200, 60,   5, 0.80)');
+    sg.addColorStop(0.5, 'rgba(255,140,  30, 0.75)');
+    sg.addColorStop(1,   'rgba(255,230, 120, 0.60)');
+    ctx.fillStyle = sg;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,220,120,0.35)';
+    ctx.lineWidth   = 0.7;
+    ctx.stroke();
+
+    // 羽軸
+    ctx.beginPath();
+    ctx.moveTo(0,0); ctx.lineTo(0,-len);
+    ctx.strokeStyle='rgba(255,240,160,0.45)';
+    ctx.lineWidth=0.8; ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ---- 小羽毛（fluffy coverts）根元をふわっと ----
+  for(let i = 0; i < 10; i++){
+    const fi  = i / 9;
+    const rx  = ww * fi * 0.45;
+    const ry  = _bez(wh*0.05, -wh*0.05, -wh*0.22, -wh*0.3, fi);
+    const len = wh * (0.28 - fi*0.08);
+    const ang = -1.6 + fi*0.4 + Math.sin(t*1.1 + i*0.6)*0.03;
+
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(ang);
+
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(-len*0.12,-len*0.4, len*0.12,-len*0.9, 0,-len);
+    ctx.bezierCurveTo( len*0.18,-len*0.7, len*0.14,-len*0.3, 0, 0);
+    ctx.closePath();
+
+    ctx.fillStyle = `rgba(255,${160+fi*60},${40+fi*80},${0.55-fi*0.1})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---- 炎の粒子（先端から流れる光点）----
+  for(let i = 0; i < 6; i++){
+    const fi  = i / 5;
+    const px  = ww*(0.3 + fi*0.55) + Math.sin(t*2+i)*ww*0.04;
+    const py  = -wh*(0.4 + fi*0.2) + Math.cos(t*1.5+i)*wh*0.06;
+    const pr  = (2.5 - fi*1.2) * (0.7 + Math.sin(t*3+i)*0.3);
+    const pg  = ctx.createRadialGradient(px,py,0,px,py,pr*2);
+    pg.addColorStop(0, 'rgba(255,255,200,0.9)');
+    pg.addColorStop(1, 'rgba(255,150,30,0)');
+    ctx.beginPath();
+    ctx.arc(px, py, pr*2, 0, Math.PI*2);
+    ctx.fillStyle = pg;
+    ctx.fill();
+  }
+}
+
+function _bez(p0,p1,p2,p3,t){
+  const u=1-t;
+  return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+}
+
+function drawOU(dark){
+  const w=gv('ou-w'),d=gv('ou-d'),piv=gv('ou-piv');
+  const ouA=d2r(gv('ou-ang')),sw=d2r(gv('arm-sw'));
+  const abx=gv('arm-x'),aby=gv('arm-y');
+  const armBW=gv('arm-bw')||150,armBH=gv('arm-bh')||500;
+  const camX=gv('cam-x'),camY=gv('cam-y');
+  const pivW=w2c(gv('ou-x'),gv('ou-y'));
+  const isSel=sel==='ou';
+  const sc=VIEW.sc;
+
+  ctx.save();
+  ctx.translate(pivW.x,pivW.y);
+  ctx.rotate(-ouA);
+
+  const bx=-w/2*sc,by=-piv*sc,bw=w*sc,bh=d*sc;
+  const cr=Math.min(bw,bh)*0.06;
+  ctx.beginPath();ctx.roundRect(bx,by,bw,bh,cr);
+  ctx.fillStyle=dark?'rgba(59,130,246,0.13)':'rgba(59,130,246,0.18)';ctx.fill();
+  ctx.strokeStyle=isSel?'#facc15':'#3b82f6';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+bw,by);
+  ctx.strokeStyle='#60a5fa';ctx.lineWidth=3;ctx.stroke();
+
+  // 🔮 隠しコマンド: 羽
+  if(wingsActive){ drawWings(ctx,bx,by,bw,bh,sc); requestAnimationFrame(()=>render()); }
+  if(gc('show-dims')){
+    ctx.fillStyle=dark?'rgba(255,255,255,0.6)':'rgba(0,0,60,0.6)';
+    ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('OU',0,bh*0.3);ctx.font='10px sans-serif';
+    ctx.fillText(w+'x'+d+'mm',0,bh*0.3+16);
+  }
+  if(isSel){
+    ctx.strokeStyle='rgba(250,204,21,0.25)';ctx.lineWidth=10;
+    ctx.beginPath();ctx.roundRect(bx-5,by-5,bw+10,bh+10,cr+5);ctx.stroke();
+  }
+
+  ctx.save();
+  ctx.translate(abx*sc,-aby*sc);
+  ctx.rotate(-sw);
+  const abwPx=armBW*sc,abhPx=armBH*sc;
+  const acr=Math.min(abwPx,abhPx)*0.2;
+  ctx.beginPath();ctx.roundRect(-abwPx/2,-abhPx/2,abwPx,abhPx,acr);
+  ctx.fillStyle=dark?'rgba(120,180,255,0.22)':'rgba(59,130,246,0.28)';
+  ctx.fill();ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;ctx.stroke();
+  if(gc('show-dims')){
+    ctx.fillStyle=dark?'rgba(255,255,255,0.45)':'rgba(0,0,60,0.5)';
+    ctx.font='8px sans-serif';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('ARM BASE',-abwPx/2+4,-abhPx/2+4);
+  }
+  ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);
+  ctx.fillStyle='#f97316';ctx.fill();
+  ctx.strokeStyle='#fed7aa';ctx.lineWidth=1.5;ctx.stroke();
+
+  const clx=camX*sc,cly=-camY*sc;
+  ctx.beginPath();ctx.arc(clx,cly,10,0,Math.PI*2);
+  ctx.fillStyle='#00d4ff';ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(clx,cly,3,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();
+  ctx.save();
+  ctx.translate(clx,cly);
+  ctx.rotate(sw+ouA);
+  ctx.font='bold 9px sans-serif';ctx.fillStyle='#00d4ff';
+  ctx.textAlign='center';ctx.fillText('CAM',0,-16);
+  ctx.restore();
+  ctx.restore();
+
+  ctx.restore();
+
+  ctx.beginPath();ctx.arc(pivW.x,pivW.y,5,0,Math.PI*2);
+  ctx.fillStyle='#7c3aed';ctx.fill();
+  ctx.strokeStyle='#a78bfa';ctx.lineWidth=1.5;ctx.stroke();
+}
+
+function drawTable(dark){
+  const w=gv('tbl-w'),d=gv('tbl-d'),tA=d2r(gv('tbl-ang'));
+  const isSel=sel==='table';
+  const tc=w2c(gv('tbl-x'),gv('tbl-y'));
+  ctx.save();ctx.translate(tc.x,tc.y);
+  ctx.rotate(-tA);
+  const tx=-w/2*VIEW.sc,ty=-d/2*VIEW.sc,tw=w*VIEW.sc,tdh=d*VIEW.sc;
+  const cr=Math.min(tw,tdh)*0.04;
+  ctx.beginPath();ctx.roundRect(tx,ty,tw,tdh,cr);
+  ctx.fillStyle=dark?'rgba(148,163,184,0.1)':'rgba(100,120,150,0.15)';ctx.fill();
+  if(isSel){ctx.strokeStyle='#facc15';ctx.lineWidth=3;}else{ctx.strokeStyle=dark?'#94a3b8':'#64748b';ctx.lineWidth=2;}
+  ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+tw,ty);
+  ctx.strokeStyle='#f97316';ctx.lineWidth=3;ctx.stroke();
+  if(gc('show-dims')){
+    ctx.fillStyle=dark?'rgba(255,255,255,0.55)':'rgba(0,0,60,0.6)';
+    ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    const presetLabel = activeTblPresetName || 'カスタム';
+    ctx.fillText(presetLabel,0,-12);ctx.font='10px sans-serif';ctx.fillText(`${w}×${d}mm`,0,4);
+  }
+  if(isSel){
+    ctx.strokeStyle='rgba(250,204,21,0.25)';ctx.lineWidth=8;
+    ctx.beginPath();ctx.roundRect(tx-4,ty-4,tw+8,tdh+8,cr+4);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawGuide(dark){
+  const cam=getCam();
+  const dir=getGuideAngleWorld();
+  const half=gv('gl-len')/2;
+  const cosD=Math.cos(dir),sinD=Math.sin(dir);
+  const startW={x:cam.x-cosD*half,y:cam.y-sinD*half};
+  const endW={x:cam.x+cosD*half,y:cam.y+sinD*half};
+  const startC=w2c(startW.x,startW.y);
+  const endC=w2c(endW.x,endW.y);
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(startC.x,startC.y);ctx.lineTo(endC.x,endC.y);
+  ctx.strokeStyle='rgba(0,212,255,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([8,5]);
+  ctx.stroke();ctx.setLineDash([]);
+  const camC=w2c(cam.x,cam.y);
+  ctx.strokeStyle='rgba(0,212,255,0.9)';ctx.lineWidth=1.5;
+  const mk=6;
+  ctx.beginPath();
+  ctx.moveTo(camC.x-mk,camC.y);ctx.lineTo(camC.x+mk,camC.y);
+  ctx.moveTo(camC.x,camC.y-mk);ctx.lineTo(camC.x,camC.y+mk);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTiltLine(raw,corr,dark){
+  const rc=w2c(raw.x,raw.y),cc=w2c(corr.x,corr.y);
+  ctx.beginPath();ctx.moveTo(rc.x,rc.y);ctx.lineTo(cc.x,cc.y);
+  ctx.strokeStyle='rgba(249,115,22,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.stroke();ctx.setLineDash([]);
+  const dx=cc.x-rc.x,dy=cc.y-rc.y,len=Math.hypot(dx,dy);
+  if(len>5){
+    const ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(cc.x,cc.y);
+    ctx.lineTo(cc.x-ux*8-uy*5,cc.y-uy*8+ux*5);
+    ctx.lineTo(cc.x-ux*8+uy*5,cc.y-uy*8-ux*5);
+    ctx.closePath();ctx.fillStyle='rgba(249,115,22,0.7)';ctx.fill();
+  }
+}
+
+function drawPortMarker(port,portRaw,dark){
+  const pc=w2c(port.x,port.y);
+  const sz=12;
+  ctx.strokeStyle='#f97316';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(pc.x-sz,pc.y);ctx.lineTo(pc.x+sz,pc.y);
+  ctx.moveTo(pc.x,pc.y-sz);ctx.lineTo(pc.x,pc.y+sz);ctx.stroke();
+  ctx.beginPath();ctx.arc(pc.x,pc.y,sz*0.7,0,Math.PI*2);
+  ctx.strokeStyle='#f97316';ctx.lineWidth=2;ctx.stroke();
+  ctx.font='bold 10px sans-serif';ctx.fillStyle='#f97316';
+  ctx.textAlign='center';ctx.fillText('CAM PORT',pc.x,pc.y-sz-4);
+}
+
+function drawTolCircle(port,dark){
+  const tol=gv('tol')/2;
+  const pc=w2c(port.x,port.y);
+  const r=tol*VIEW.sc;
+  ctx.beginPath();ctx.arc(pc.x,pc.y,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(249,115,22,0.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.stroke();ctx.setLineDash([]);
+}
+
+function getRollinAngle(){
+  const ouA=gv('ou-ang'),tblA=gv('tbl-ang');
+  let ang=ouA-tblA;
+  ang=((ang+180)%360+360)%360-180;
+  return ang;
+}
+
+function drawRollinAngle(dark){
+  if(!gc('show-rollin'))return;
+  const ouA=d2r(gv('ou-ang')),tblA=d2r(gv('tbl-ang'));
+  const rollinAng=getRollinAngle();
+  const absAng=Math.abs(rollinAng);
+  const pivC=w2c(gv('ou-x'),gv('ou-y'));
+  const arrLen=gv('rollin-arrow-len')||60;
+  const arcR=Math.max(16,arrLen*0.6);
+  const tblAxisC=-(tblA)+Math.PI/2;
+  const ouFwdC=-(ouA)+Math.PI/2+Math.PI;
+  ctx.save();
+  ctx.translate(pivC.x,pivC.y);
+  const refLen=arcR*1.5;
+  ctx.beginPath();
+  ctx.moveTo(Math.cos(tblAxisC)*refLen,Math.sin(tblAxisC)*refLen);
+  ctx.lineTo(-Math.cos(tblAxisC)*refLen,-Math.sin(tblAxisC)*refLen);
+  ctx.strokeStyle=dark?'rgba(148,163,184,0.45)':'rgba(80,100,130,0.5)';
+  ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
+  const ax=Math.cos(ouFwdC)*arrLen,ay=Math.sin(ouFwdC)*arrLen;
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(ax,ay);
+  ctx.strokeStyle='#60a5fa';ctx.lineWidth=2.5;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax,ay);
+  ctx.lineTo(ax-Math.cos(ouFwdC)*10-Math.sin(ouFwdC)*5,ay-Math.sin(ouFwdC)*10+Math.cos(ouFwdC)*5);
+  ctx.lineTo(ax-Math.cos(ouFwdC)*10+Math.sin(ouFwdC)*5,ay-Math.sin(ouFwdC)*10-Math.cos(ouFwdC)*5);
+  ctx.closePath();ctx.fillStyle='#60a5fa';ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,arcR,tblAxisC,ouFwdC,rollinAng<0);
+  ctx.strokeStyle=absAng<5?'#eab308':'#a78bfa';ctx.lineWidth=2.5;ctx.stroke();
+  let a1=tblAxisC,a2=ouFwdC;
+  if(rollinAng<0){const t=a1;a1=a2;a2=t;}
+  let diff=a2-a1;
+  diff=((diff%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+  const midAng=a1+diff/2;
+  const lr=arcR+20;
+  const lx=Math.cos(midAng)*lr,ly=Math.sin(midAng)*lr;
+  const label=absAng.toFixed(1)+'°';
+  ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  const tw2=ctx.measureText(label).width;
+  ctx.fillStyle=dark?'rgba(10,10,18,0.82)':'rgba(238,240,245,0.88)';
+  ctx.beginPath();ctx.roundRect(lx-tw2/2-5,ly-10,tw2+10,20,4);ctx.fill();
+  ctx.fillStyle='#a78bfa';ctx.fillText(label,lx,ly);
+  ctx.font='9px sans-serif';
+  ctx.fillStyle=dark?'rgba(167,139,250,0.75)':'rgba(124,58,237,0.85)';
+  ctx.fillText('ロールイン角',lx,ly+15);
+  ctx.restore();
+}
+
+// ====== 距離計測 ======
+let measureMode=false;
+let measurePts=[];
+
+function toggleMeasure(){
+  measureMode=!measureMode;
+  measurePts=[];
+  const btn=$('measure-btn');
+  const row=$('measure-row');
+  if(measureMode){
+    btn.classList.add('btn-active');
+    cvs.classList.add('measure');
+    row.style.display='flex';
+    $('measure-txt').textContent='クリックで1点目を指定してください';
+    $('measure-badge').style.display='none';
+    if(addPortMode) toggleAddPortMode();
+  }else{
+    btn.classList.remove('btn-active');
+    cvs.classList.remove('measure');
+    row.style.display='none';
+  }
+  render();
+}
+
+function clearMeasure(){
+  measurePts=[];
+  $('measure-txt').textContent='クリックで1点目を指定してください';
+  $('measure-badge').style.display='none';
+  render();
+}
+
+function drawMeasure(dark){
+  if(!measureMode&&measurePts.length===0)return;
+  ctx.save();
+  measurePts.forEach((pt,i)=>{
+    const c=w2c(pt.x,pt.y);
+    ctx.beginPath();ctx.arc(c.x,c.y,6,0,Math.PI*2);
+    ctx.fillStyle='#facc15';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.font='10px sans-serif';ctx.fillStyle='#facc15';
+    ctx.textAlign='left';ctx.textBaseline='bottom';
+    ctx.fillText(`P${i+1}(${pt.x.toFixed(0)},${pt.y.toFixed(0)})`,c.x+8,c.y-4);
+  });
+  if(measurePts.length===2){
+    const c1=w2c(measurePts[0].x,measurePts[0].y);
+    const c2=w2c(measurePts[1].x,measurePts[1].y);
+    ctx.beginPath();ctx.moveTo(c1.x,c1.y);ctx.lineTo(c2.x,c2.y);
+    ctx.strokeStyle='#facc15';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+    const d=dist(measurePts[0],measurePts[1]);
+    const mx=(c1.x+c2.x)/2,my=(c1.y+c2.y)/2;
+    const label=d.toFixed(1)+' mm';
+    ctx.font='bold 13px sans-serif';
+    const tw=ctx.measureText(label).width;
+    ctx.fillStyle=dark?'rgba(10,10,18,0.85)':'rgba(238,240,245,0.9)';
+    ctx.fillRect(mx-tw/2-5,my-12,tw+10,20);
+    ctx.fillStyle='#facc15';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,mx,my);
+  }
+  ctx.restore();
+}
+
+function updateStatus(d,cam){
+  const tol=gv('tol')/2;
+  const badge=$('dist-badge');
+  const ok=d<=tol,warn=d<=tol*2;
+  badge.textContent=d.toFixed(1)+'mm';
+  badge.style.color=ok?'#22c55e':warn?'#eab308':'#ef4444';
+  badge.style.borderColor=badge.style.color;
+  $('dist-txt').textContent=ok?'✅ 許容範囲内':warn?'⚠️ 要確認':'❌ 範囲外 – 調整が必要';
+  $('scale-txt').textContent=(1/VIEW.sc).toFixed(1)+'mm/px';
+  $('ou-ang-s').textContent=gv('ou-ang').toFixed(1)+'°';
+  $('ou-ang-num').value=gv('ou-ang').toFixed(1);
+  $('cam-pos-s').textContent=`(${cam.x.toFixed(0)}, ${cam.y.toFixed(0)})mm`;
+  const tblAng=gv('tbl-ang');
+  $('tbl-ang-s').textContent=tblAng.toFixed(1)+'°';
+  const rollinAng=getRollinAngle();
+  const rollinBadge=$('rollin-badge');
+  rollinBadge.textContent=rollinAng.toFixed(1)+'°';
+  rollinBadge.style.color='#a78bfa';rollinBadge.style.borderColor='#a78bfa';
+  const guideAngDeg=gv('ou-ang')+gv('arm-sw')+gv('gl-ang');
+  let relAng=guideAngDeg-tblAng;
+  relAng=((relAng+180)%360+360)%360-180;
+  const relBadge=$('rel-ang-badge');
+  relBadge.textContent=relAng.toFixed(1)+'°';
+  const absRel=Math.abs(relAng);
+  const nearPar=absRel<10||absRel>170;
+  const nearPerp=Math.abs(absRel-90)<10;
+  relBadge.style.color=nearPerp?'#22c55e':nearPar?'#eab308':'var(--accent)';
+  relBadge.style.borderColor=relBadge.style.color;
+  $('rel-ang-txt').textContent=nearPerp?'✅ ほぼ直交（理想）':nearPar?'⚠️ ほぼ平行':'';
+  const tiltType=$('tilt-type').value,tiltAng=gv('tilt-ang');
+  if(tiltType==='none'||tiltAng===0){$('tilt-s').textContent='なし';}
+  else{const label=tiltType==='trend'?'頭低位':'頭高位';$('tilt-s').textContent=`${label} ${tiltAng.toFixed(1)}°`;}
+}
+
+function updateTiltInfo(raw,corr){
+  const d=dist(raw,corr).toFixed(1);
+  const el=$('tilt-info');
+  if($('tilt-type').value==='none'||gv('tilt-ang')===0){el.textContent='';return;}
+  el.textContent=`傾斜補正量: ${d}mm`;
+}
+
+let sel=null;
+
+function isInOU(wx,wy){
+  const w=gv('ou-w'),d=gv('ou-d'),piv=gv('ou-piv'),ouA=d2r(gv('ou-ang'));
+  const dx=wx-gv('ou-x'),dy=wy-gv('ou-y');
+  const loc=rot(dx,dy,-ouA);
+  return loc.x>=-w/2&&loc.x<=w/2&&loc.y>=-piv&&loc.y<=d-piv;
+}
+function isInTable(wx,wy){
+  const w=gv('tbl-w'),d=gv('tbl-d'),tA=d2r(gv('tbl-ang'));
+  const dx=wx-gv('tbl-x'),dy=wy-gv('tbl-y');
+  const loc=rot(dx,dy,-tA);
+  return loc.x>=-w/2&&loc.x<=w/2&&loc.y>=-d/2&&loc.y<=d/2;
+}
+
+function toggleSec(hd){
+  hd.classList.toggle('open');
+  hd.nextElementSibling.classList.toggle('open');
+}
+function syncNum(rangeId,numId){$(numId).value=parseFloat($(rangeId).value).toFixed(1);}
+function syncRange(numId,rangeId){
+  const el=$(rangeId);let v=parseFloat($(numId).value);
+  if(isNaN(v))return;
+  v=Math.max(parseFloat(el.min),Math.min(parseFloat(el.max),v));
+  el.value=v;$(numId).value=v;
+}
+function onOUAngle(){syncNum('ou-ang','ou-ang-num');render();}
+function onArmSwivel(){syncNum('arm-sw','arm-sw-num');render();}
+function onTableAngle(){syncNum('tbl-ang','tbl-ang-num');render();}
+function onTiltAngle(){syncNum('tilt-ang','tilt-ang-num');render();}
+function onGuideAngle(){syncNum('gl-ang','gl-ang-num');render();}
+function onOUAngleNum(){syncRange('ou-ang-num','ou-ang');render();}
+function onArmSwivelNum(){syncRange('arm-sw-num','arm-sw');render();}
+function onTableAngleNum(){syncRange('tbl-ang-num','tbl-ang');render();}
+function onTiltAngleNum(){syncRange('tilt-ang-num','tilt-ang');render();}
+function onGuideAngleNum(){syncRange('gl-ang-num','gl-ang');render();}
+
+function resetView(){VIEW.px=0;VIEW.py=0;VIEW.sc=0.077;render();}
+
+function zoomStep(factor){
+  const cx = cvs.width/2, cy = cvs.height/2;
+  VIEW.px = (VIEW.px - cx)*factor + cx;
+  VIEW.py = (VIEW.py - cy)*factor + cy;
+  VIEW.sc = Math.max(0.02, Math.min(1, VIEW.sc*factor));
+  render();
+}
+
+
+function alignOU(){
+  const port=getPort();
+  const sw=d2r(gv('arm-sw')),ouA=d2r(gv('ou-ang'));
+  const bx=gv('arm-x'),by=gv('arm-y'),cx=gv('cam-x'),cy=gv('cam-y');
+  const co=rot(cx,cy,sw);
+  const loc=rot(bx+co.x,by+co.y,ouA);
+  $('ou-x').value=(port.x-loc.x).toFixed(1);
+  $('ou-y').value=(port.y-loc.y).toFixed(1);
+  render();
+}
+
+function changeBG(){render();}
+
+let drag={active:false,moved:false,mode:'',sx:0,sy:0,ox:0,oy:0,oAng:0};
+
+cvs.addEventListener('mousedown',e=>{
+  const rect=cvs.getBoundingClientRect();
+  const wp=c2w(e.clientX-rect.left,e.clientY-rect.top);
+
+  // ペイントモード
+  if(paintMode){ paintMouseDown(e); return; }
+
+  // ポート追加モード
+  if(addPortMode){
+    const label = $('new-port-label').value.trim() || `ポート${nextPortId}`;
+    const color = $('new-port-color').value || '#a855f7';
+    const size  = parseFloat($('new-port-size').value) || 12;
+    extraPorts.push({id: nextPortId++, label, color, size, x: wp.x, y: wp.y});
+    renderPortList();
+    render();
+    return;
+  }
+
+  // 計測モード
+  if(measureMode){
+    if(measurePts.length<2){
+      measurePts.push({x:wp.x,y:wp.y});
+      if(measurePts.length===1){$('measure-txt').textContent='クリックで2点目を指定してください';}
+      else{
+        const d=dist(measurePts[0],measurePts[1]);
+        $('measure-txt').textContent='計測完了';
+        const badge=$('measure-badge');badge.textContent=d.toFixed(1)+' mm';badge.style.display='inline-block';
+      }
+      render();
+    }else{clearMeasure();}
+    return;
+  }
+
+  drag.active=true;drag.moved=false;
+  drag.sx=e.clientX;drag.sy=e.clientY;
+  drag.ox=VIEW.px;drag.oy=VIEW.py;
+  drag.oAng=gv('ou-ang');
+  drag.oOUx=gv('ou-x');drag.oOUy=gv('ou-y');
+  drag.oTblX=gv('tbl-x');drag.oTblY=gv('tbl-y');
+  drag.oPortX=gv('port-x');drag.oPortY=gv('port-y');
+
+  // 追加ポートのドラッグ開始チェック
+  const ep = getExtraPortAt(wp.x, wp.y);
+  if(ep && !e.shiftKey && !e.altKey && !e.ctrlKey){
+    dragPortId = ep.id;
+    drag.mode = 'extra-port';
+    drag.oExPortX = ep.x;
+    drag.oExPortY = ep.y;
+    cvs.classList.add('grab');
+    return;
+  }
+
+  if(e.shiftKey) drag.mode='ou';
+  else if(e.altKey) drag.mode='rotate';
+  else if(e.ctrlKey) drag.mode='port';
+  else if(sel==='ou') drag.mode='ou';
+  else if(sel==='table') drag.mode='table';
+  else if(isInOU(wp.x,wp.y)){sel='ou';drag.mode='ou';render();}
+  else if(isInTable(wp.x,wp.y)){sel='table';drag.mode='table';render();}
+  else drag.mode='pan';
+  cvs.classList.add('grab');
+});
+
+document.addEventListener('mousemove',e=>{
+  if(paintMode && paintDrawing){ paintMouseMove(e); return; }
+  if(!drag.active)return;
+  const dx=(e.clientX-drag.sx)/VIEW.sc;
+  const dy=-(e.clientY-drag.sy)/VIEW.sc;
+  if(Math.abs(e.clientX-drag.sx)>3||Math.abs(e.clientY-drag.sy)>3)drag.moved=true;
+
+  if(drag.mode==='extra-port'){
+    const ep = extraPorts.find(p=>p.id===dragPortId);
+    if(ep){ep.x=drag.oExPortX+dx;ep.y=drag.oExPortY+dy;}
+    render();return;
+  }
+
+  if(drag.mode==='pan'){VIEW.px=drag.ox+(e.clientX-drag.sx);VIEW.py=drag.oy+(e.clientY-drag.sy);}
+  else if(drag.mode==='ou'){$('ou-x').value=(drag.oOUx+dx).toFixed(1);$('ou-y').value=(drag.oOUy+dy).toFixed(1);}
+  else if(drag.mode==='table'){$('tbl-x').value=(drag.oTblX+dx).toFixed(1);$('tbl-y').value=(drag.oTblY+dy).toFixed(1);}
+  else if(drag.mode==='rotate'){
+    const ang=drag.oAng+(e.clientX-drag.sx)*0.3;
+    const clamped=Math.max(-180,Math.min(180,ang));
+    $('ou-ang').value=clamped;$('ou-ang-num').value=clamped.toFixed(1);
+  }
+  else if(drag.mode==='port'){
+    const tA=d2r(gv('tbl-ang'));
+    const wr=rot(dx,dy,-tA);
+    $('port-x').value=(drag.oPortX+wr.x).toFixed(1);$('port-y').value=(drag.oPortY+wr.y).toFixed(1);
+  }
+  render();
+});
+
+document.addEventListener('mouseup',e=>{
+  if(paintMode){ paintMouseUp(e); return; }
+  if(drag.mode==='extra-port'){
+    // ポートリストの座標を更新
+    renderPortList();
+  }
+  if(!drag.moved){
+    const rect=cvs.getBoundingClientRect();
+    const wp=c2w(e.clientX-rect.left,e.clientY-rect.top);
+    if(drag.mode==='pan'&&!isInOU(wp.x,wp.y)&&!isInTable(wp.x,wp.y)){sel=null;render();}
+  }
+  drag.active=false;dragPortId=null;cvs.classList.remove('grab');
+});
+
+cvs.addEventListener('dblclick',e=>{
+  const rect=cvs.getBoundingClientRect();
+  const wp=c2w(e.clientX-rect.left,e.clientY-rect.top);
+  if(isInOU(wp.x,wp.y)){sel='ou';}
+  else if(isInTable(wp.x,wp.y)){sel='table';}
+  else sel=null;
+  render();
+});
+
+cvs.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(e.altKey){
+    const ang=parseFloat($('ou-ang').value)-(e.deltaY>0?1:-1)*0.5;
+    const clamped=Math.max(-180,Math.min(180,ang));
+    $('ou-ang').value=clamped;$('ou-ang-num').value=clamped.toFixed(1);
+  }else{
+    const factor=e.deltaY>0?0.9:1.1;
+    const mx=e.clientX-cvs.getBoundingClientRect().left;
+    const my=e.clientY-cvs.getBoundingClientRect().top;
+    VIEW.px=(VIEW.px-mx)*factor+mx;VIEW.py=(VIEW.py-my)*factor+my;
+    VIEW.sc=Math.max(0.02,Math.min(1,VIEW.sc*factor));
+  }
+  render();
+},{passive:false});
+
+
+// ====== ペイント ======
+let paintMode = false;
+let paintTool = 'pen'; // pen, line, rect, circle, dot, text, erase
+let paintStrokes = [];
+let paintUndo  = [];
+let paintCurrent = null;
+let paintDrawing = false;
+let paintDash = 'solid'; // solid, dash, dot2
+
+// カラーパレット定義
+const PAINT_COLORS = [
+  '#ef4444','#f97316','#eab308','#22c55e','#14b8a6',
+  '#00d4ff','#3b82f6','#8b5cf6','#ec4899','#ffffff',
+  '#94a3b8','#000000'
+];
+let paintActiveColor = '#ef4444';
+
+function initPaintUI(){
+  // カラーパレット生成
+  const pal = $('paint-palette');
+  PAINT_COLORS.forEach(c=>{
+    const s = document.createElement('button');
+    s.dataset.color = c;
+    s.title = c;
+    s.style.cssText = `width:18px;height:18px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;flex-shrink:0;padding:0;transition:transform .15s,border-color .15s`;
+    s.onclick = ()=> setPaintColor(c);
+    pal.appendChild(s);
+  });
+  // 太さプリセット
+  const sp = $('paint-size-presets');
+  [1,3,6,12].forEach(sz=>{
+    const b = document.createElement('button');
+    b.className = 'btn btn-sm';
+    b.dataset.size = sz;
+    b.title = sz+'px';
+    b.style.cssText = 'padding:2px 6px;display:flex;align-items:center;justify-content:center;min-width:28px';
+    b.innerHTML = `<span style="display:block;width:${Math.min(sz*2+4,20)}px;height:${Math.min(sz,6)}px;background:#22c55e;border-radius:3px"></span>`;
+    b.onclick = ()=>{ setPaintSizeVal(sz); };
+    sp.appendChild(b);
+  });
+  setPaintColor(paintActiveColor);
+  setPaintSizeVal(3);
+  setPaintDash('solid');
+  updatePaintPreview();
+}
+
+function setPaintColor(hex){
+  paintActiveColor = hex;
+  $('paint-color').value = hex;
+  $('paint-color-hex').textContent = hex;
+  // パレットのアクティブ枠
+  $('paint-palette').querySelectorAll('button').forEach(b=>{
+    b.style.borderColor = b.dataset.color===hex ? '#fff' : 'transparent';
+    b.style.transform   = b.dataset.color===hex ? 'scale(1.2)' : 'scale(1)';
+  });
+  updatePaintPreview();
+}
+
+function onPickerColor(hex){
+  setPaintColor(hex);
+}
+
+function setPaintSizeVal(v){
+  v = Math.max(1, Math.min(60, parseInt(v)||1));
+  $('paint-size').value = v;
+  $('paint-size-num').value = v;
+  // プリセットボタンのハイライト
+  $('paint-size-presets').querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('btn-active', parseInt(b.dataset.size)===v);
+  });
+  updatePaintPreview();
+}
+function onPaintSizeSlider(v){ setPaintSizeVal(v); }
+function onPaintSizeNum(v){ setPaintSizeVal(v); $('paint-size').value=Math.max(1,Math.min(60,parseInt(v)||1)); }
+
+function setPaintDash(mode){
+  paintDash = mode;
+  ['solid','dash','dot2'].forEach(m=>{
+    const el=$('ps-'+m); if(el) el.classList.toggle('btn-active',m===mode);
+  });
+  updatePaintPreview();
+}
+
+function getDashPattern(mode, size){
+  if(mode==='dash')  return [size*3+4, size*2+2];
+  if(mode==='dot2')  return [size+2,   size*2+2];
+  return [];
+}
+
+function getPaintColor(){ return paintActiveColor; }
+function getPaintSize(){  return parseInt($('paint-size').value)||3; }
+function getPaintAlpha(){ return (parseInt($('paint-alpha').value)||100)/100; }
+
+function updatePaintPreview(){
+  const pc = $('paint-preview');
+  if(!pc) return;
+  const pctx = pc.getContext('2d');
+  const w=pc.width, h=pc.height;
+  const dark = $('bg-mode').value==='dark';
+  pctx.clearRect(0,0,w,h);
+  pctx.fillStyle = dark ? '#0a0a12' : '#eef0f5';
+  pctx.fillRect(0,0,w,h);
+  const col = paintActiveColor;
+  const sz  = getPaintSize();
+  const alpha = getPaintAlpha();
+  const dash  = getDashPattern(paintDash, sz);
+  pctx.globalAlpha = alpha;
+  pctx.strokeStyle = col; pctx.fillStyle = col;
+  pctx.lineWidth = Math.min(sz, h*0.7);
+  pctx.lineCap = 'round'; pctx.lineJoin = 'round';
+  pctx.setLineDash(dash);
+  pctx.beginPath(); pctx.moveTo(6, h/2); pctx.lineTo(w-6, h/2); pctx.stroke();
+  pctx.setLineDash([]);
+  pctx.globalAlpha = 1;
+}
+
+function togglePaintMode(){
+  paintMode = !paintMode;
+  const btn = $('paint-btn');
+  const row = $('paint-row');
+  if(paintMode){
+    btn.classList.add('btn-active');
+    row.style.display = 'block';
+    if(measureMode) toggleMeasure();
+    if(addPortMode) toggleAddPortMode();
+    setPaintTool(paintTool);
+  } else {
+    btn.classList.remove('btn-active');
+    row.style.display = 'none';
+    updatePaintCursor();
+  }
+  render();
+}
+
+function setPaintTool(t){
+  paintTool = t;
+  ['pen','line','rect','circle','dot','text','erase'].forEach(id=>{
+    const el = $('pt-'+id);
+    if(el) el.classList.toggle('btn-active', id===t);
+  });
+  updatePaintCursor();
+}
+
+function updatePaintCursor(){
+  cvs.classList.remove('paint','paint-dot','paint-erase','paint-text','measure','add-port');
+  if(!paintMode) return;
+  if(paintTool==='dot')         cvs.classList.add('paint-dot');
+  else if(paintTool==='erase')  cvs.classList.add('paint-erase');
+  else if(paintTool==='text')   cvs.classList.add('paint-text');
+  else                          cvs.classList.add('paint');
+}
+
+function undoPaint(){
+  if(paintUndo.length===0) return;
+  paintStrokes = paintUndo.pop();
+  render();
+}
+
+function clearPaint(){
+  if(!confirm('ペイントをすべて消去しますか？')) return;
+  paintUndo.push(JSON.parse(JSON.stringify(paintStrokes)));
+  paintStrokes = [];
+  render();
+}
+
+function drawPaintStrokes(dark){
+  paintStrokes.forEach(s => drawOneStroke(s, dark));
+  if(paintCurrent) drawOneStroke(paintCurrent, dark, true);
+}
+
+function drawOneStroke(s, dark, preview=false){
+  ctx.save();
+  ctx.globalAlpha = (s.alpha ?? 1) * (preview ? 0.75 : 1);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const dash = getDashPattern(s.dash||'solid', s.size||2);
+
+  if(s.type==='pen' || s.type==='erase'){
+    if(s.pts.length < 2){ ctx.restore(); return; }
+    ctx.beginPath();
+    const p0 = w2c(s.pts[0].x, s.pts[0].y);
+    ctx.moveTo(p0.x, p0.y);
+    for(let i=1;i<s.pts.length;i++){
+      const p = w2c(s.pts[i].x, s.pts[i].y);
+      ctx.lineTo(p.x, p.y);
+    }
+    if(s.type==='erase'){
+      ctx.strokeStyle = dark ? '#0a0a12' : '#eef0f5';
+      ctx.lineWidth = s.size * VIEW.sc * 3;
+      ctx.setLineDash([]);
+    } else {
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = Math.max(1, s.size * VIEW.sc);
+      ctx.setLineDash(dash.map(d=>d*VIEW.sc));
+    }
+    ctx.stroke();
+  } else if(s.type==='line'){
+    if(!s.p1||!s.p2){ ctx.restore(); return; }
+    const a = w2c(s.p1.x, s.p1.y), b = w2c(s.p2.x, s.p2.y);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = Math.max(1, s.size * VIEW.sc);
+    ctx.setLineDash(dash.map(d=>d*VIEW.sc));
+    ctx.stroke();
+  } else if(s.type==='rect'){
+    if(!s.p1||!s.p2){ ctx.restore(); return; }
+    const a = w2c(s.p1.x, s.p1.y), b = w2c(s.p2.x, s.p2.y);
+    ctx.beginPath(); ctx.rect(a.x, a.y, b.x-a.x, b.y-a.y);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = Math.max(1, s.size * VIEW.sc);
+    ctx.setLineDash(dash.map(d=>d*VIEW.sc));
+    ctx.stroke();
+  } else if(s.type==='circle'){
+    if(!s.p1||!s.p2){ ctx.restore(); return; }
+    const a = w2c(s.p1.x, s.p1.y), b = w2c(s.p2.x, s.p2.y);
+    const r = Math.hypot(b.x-a.x, b.y-a.y);
+    ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, Math.PI*2);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = Math.max(1, s.size * VIEW.sc);
+    ctx.setLineDash(dash.map(d=>d*VIEW.sc));
+    ctx.stroke();
+  } else if(s.type==='dot'){
+    const c = w2c(s.x, s.y);
+    ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, s.size * VIEW.sc), 0, Math.PI*2);
+    ctx.fillStyle = s.color; ctx.fill();
+  } else if(s.type==='text'){
+    const c = w2c(s.x, s.y);
+    const fs = Math.max(10, s.size * VIEW.sc * 4);
+    ctx.font = `bold ${fs}px sans-serif`;
+    ctx.fillStyle = s.color;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(s.text || '', c.x, c.y);
+  }
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function paintMouseDown(e){
+  const rect = cvs.getBoundingClientRect();
+  const wp = c2w(e.clientX-rect.left, e.clientY-rect.top);
+  paintDrawing = true;
+  paintUndo.push(JSON.parse(JSON.stringify(paintStrokes)));
+  if(paintUndo.length > 50) paintUndo.shift();
+
+  const baseStroke = { color: getPaintColor(), size: getPaintSize(), alpha: getPaintAlpha(), dash: paintDash };
+
+  if(paintTool==='pen'||paintTool==='erase'){
+    paintCurrent = {...baseStroke, type: paintTool, pts:[{x:wp.x,y:wp.y}]};
+  } else if(paintTool==='line'){
+    paintCurrent = {...baseStroke, type:'line', p1:wp, p2:wp};
+  } else if(paintTool==='rect'){
+    paintCurrent = {...baseStroke, type:'rect', p1:wp, p2:wp};
+  } else if(paintTool==='circle'){
+    paintCurrent = {...baseStroke, type:'circle', p1:wp, p2:wp};
+  } else if(paintTool==='dot'){
+    paintStrokes.push({...baseStroke, type:'dot', x:wp.x, y:wp.y});
+    paintCurrent = null; paintDrawing = false; render();
+  } else if(paintTool==='text'){
+    const txt = prompt('テキストを入力:', '');
+    if(txt !== null && txt.trim() !== ''){
+      paintStrokes.push({...baseStroke, type:'text', x:wp.x, y:wp.y, text:txt});
+    } else { paintUndo.pop(); }
+    paintCurrent = null; paintDrawing = false; render();
+  }
+}
+
+function paintMouseMove(e){
+  if(!paintDrawing || !paintCurrent) return;
+  const rect = cvs.getBoundingClientRect();
+  const wp = c2w(e.clientX-rect.left, e.clientY-rect.top);
+  if(paintTool==='pen'||paintTool==='erase'){
+    paintCurrent.pts.push({x:wp.x, y:wp.y});
+  } else if(['line','rect','circle'].includes(paintTool)){
+    paintCurrent.p2 = wp;
+  }
+  render();
+}
+
+function paintMouseUp(e){
+  if(!paintDrawing) return;
+  paintDrawing = false;
+  if(paintCurrent){
+    if((paintTool==='pen'||paintTool==='erase') && paintCurrent.pts.length >= 2){
+      paintStrokes.push(paintCurrent);
+    } else if(['line','rect','circle'].includes(paintTool) && paintCurrent.p1 && paintCurrent.p2){
+      paintStrokes.push(paintCurrent);
+    }
+  }
+  paintCurrent = null;
+  render();
+}
+
+// ====== PRESETS ======
+function getPresetData(){
+  return{
+    armSw:gv('arm-sw'),armX:gv('arm-x'),armY:gv('arm-y'),
+    armBW:gv('arm-bw'),armBH:gv('arm-bh'),
+    camX:gv('cam-x'),camY:gv('cam-y'),
+    glAng:gv('gl-ang'),glLen:gv('gl-len'),showGuide:gc('show-guide'),
+    ouW:gv('ou-w'),ouD:gv('ou-d'),ouPiv:gv('ou-piv'),
+    ouX:gv('ou-x'),ouY:gv('ou-y'),ouAng:gv('ou-ang'),
+    tblW:gv('tbl-w'),tblD:gv('tbl-d'),tblX:gv('tbl-x'),tblY:gv('tbl-y'),tblAng:gv('tbl-ang'),
+    portX:gv('port-x'),portY:gv('port-y'),
+    tiltType:$('tilt-type').value,tiltAng:gv('tilt-ang'),portH:gv('port-h'),
+    extraPorts: JSON.parse(JSON.stringify(extraPorts)),
+    activeTblPreset: activeTblPresetName,
+    paintStrokes: JSON.parse(JSON.stringify(paintStrokes))
+  };
+}
+function applyPresetData(d){
+  const s=(id,v)=>{$(id).value=v;};
+  s('arm-sw',d.armSw);s('arm-x',d.armX);s('arm-y',d.armY);
+  if(d.armBW)s('arm-bw',d.armBW);if(d.armBH)s('arm-bh',d.armBH);
+  s('cam-x',d.camX);s('cam-y',d.camY);
+  s('gl-ang',d.glAng);s('gl-len',d.glLen);
+  if(d.showGuide!==undefined)$('show-guide').checked=d.showGuide;
+  s('ou-w',d.ouW);s('ou-d',d.ouD);s('ou-piv',d.ouPiv);
+  s('ou-x',d.ouX);s('ou-y',d.ouY);s('ou-ang',d.ouAng);
+  s('tbl-w',d.tblW);s('tbl-d',d.tblD);s('tbl-x',d.tblX);s('tbl-y',d.tblY);s('tbl-ang',d.tblAng);
+  s('port-x',d.portX);s('port-y',d.portY);
+  $('tilt-type').value=d.tiltType;
+  s('tilt-ang',d.tiltAng);s('port-h',d.portH);
+  $('ou-ang-num').value=(d.ouAng||0).toFixed(1);
+  $('arm-sw-num').value=(d.armSw||0).toFixed(1);
+  $('tbl-ang-num').value=(d.tblAng||0).toFixed(1);
+  $('tilt-ang-num').value=(d.tiltAng||0).toFixed(1);
+  $('gl-ang-num').value=(d.glAng||0).toFixed(1);
+  if(d.extraPorts){extraPorts=d.extraPorts;nextPortId=extraPorts.reduce((m,p)=>Math.max(m,p.id),0)+1;renderPortList();}
+  if(d.paintStrokes){paintStrokes=d.paintStrokes;}
+  if(d.activeTblPreset!==undefined){activeTblPresetName=d.activeTblPreset;renderTblPresetGrid();}
+  render();
+}
+function loadPresets(){return JSON.parse(localStorage.getItem('hinotori_presets')||'[]');}
+function savePresets(arr){localStorage.setItem('hinotori_presets',JSON.stringify(arr));}
+
+function savePreset(){
+  const name=$('pr-name').value.trim();
+  if(!name){alert('プリセット名を入力してください');return;}
+  const arr=loadPresets();
+  const idx=arr.findIndex(p=>p.name===name);
+  const entry={name,data:getPresetData()};
+  if(idx>=0)arr[idx]=entry;else arr.push(entry);
+  savePresets(arr);renderPresetList();$('pr-name').value='';
+}
+function renderPresetList(){
+  const arr=loadPresets();const el=$('pr-list');
+  if(!arr.length){el.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 0">プリセットなし</div>';return;}
+  el.innerHTML=arr.map((p,i)=>`<div class="pr-item">
+    <span class="pr-name" title="${p.name}">${p.name}</span>
+    <button class="btn btn-sm" onclick="loadPreset(${i})">読込</button>
+    <button class="btn btn-sm btn-del" onclick="deletePreset(${i})">✕</button>
+  </div>`).join('');
+}
+function loadPreset(i){const arr=loadPresets();if(arr[i])applyPresetData(arr[i].data);}
+function deletePreset(i){const arr=loadPresets();arr.splice(i,1);savePresets(arr);renderPresetList();}
+
+
+
+function doExport(){
+  const name=$('exp-name').value.trim()||'hinotori_rollin';
+  const addInfo = $('exp-info').checked;
+
+  if(!addInfo){
+    const link=document.createElement('a');
+    link.download=name+'.png';link.href=cvs.toDataURL('image/png');link.click();
+    closeExportModal();
+    return;
+  }
+
+  // 欄外情報付きで出力
+  const infoH = 180; // 欄外の高さ
+  const margin = 16;
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width  = cvs.width;
+  offCanvas.height = cvs.height + infoH;
+  const oc = offCanvas.getContext('2d');
+
+  // シミュレーター画面をコピー
+  oc.drawImage(cvs, 0, 0);
+
+  // 欄外背景
+  const dark = $('bg-mode').value === 'dark';
+  oc.fillStyle = dark ? '#0d0d1a' : '#dde0e8';
+  oc.fillRect(0, cvs.height, cvs.width, infoH);
+
+  // 区切り線
+  oc.strokeStyle = dark ? '#3a3a5a' : '#aab0c0';
+  oc.lineWidth = 1;
+  oc.beginPath();
+  oc.moveTo(0, cvs.height); oc.lineTo(cvs.width, cvs.height);
+  oc.stroke();
+
+  // 情報収集
+  const ouAng   = gv('ou-ang').toFixed(1);
+  const tblAng  = gv('tbl-ang').toFixed(1);
+  const armSw   = gv('arm-sw').toFixed(1);
+  const glAng   = gv('gl-ang').toFixed(1);
+  const tiltType = $('tilt-type').value;
+  const tiltAng  = gv('tilt-ang').toFixed(1);
+  const tiltLabel = tiltType==='trend'?'頭低位':tiltType==='rev'?'頭高位':'なし';
+  const tiltStr   = tiltType==='none'||parseFloat(tiltAng)===0 ? 'なし' : `${tiltLabel} ${tiltAng}°`;
+  const ouX = gv('ou-x').toFixed(0), ouY = gv('ou-y').toFixed(0);
+  const tblW = gv('tbl-w'), tblD = gv('tbl-d');
+  const ouW  = gv('ou-w'), ouD  = gv('ou-d');
+  const cam  = getCam();
+  const port = getPort();
+  const camDist = dist(cam,port).toFixed(1);
+  const rollinAng = getRollinAngle().toFixed(1);
+  const guideAngDeg = gv('ou-ang')+gv('arm-sw')+gv('gl-ang');
+  let relAng = guideAngDeg - gv('tbl-ang');
+  relAng = ((relAng+180)%360+360)%360-180;
+
+  // タイトル行
+  const textColor  = dark ? '#e2e8f0' : '#1e2030';
+  const mutedColor = dark ? '#6b7a9e' : '#6b7a9e';
+  const accentColor = '#00d4ff';
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  oc.font = 'bold 13px sans-serif';
+  oc.fillStyle = accentColor;
+  oc.textAlign = 'left';
+  oc.textBaseline = 'top';
+  oc.fillText('hinotori Roll-In Simulator — 設定情報', margin, cvs.height + 10);
+
+  oc.font = '11px sans-serif';
+  oc.fillStyle = mutedColor;
+  oc.textAlign = 'right';
+  oc.fillText(dateStr, cvs.width - margin, cvs.height + 11);
+
+  // 区切り
+  oc.strokeStyle = dark ? '#2a2a4a' : '#c0c5d0';
+  oc.lineWidth = 0.5;
+  oc.beginPath();
+  oc.moveTo(margin, cvs.height + 27); oc.lineTo(cvs.width - margin, cvs.height + 27);
+  oc.stroke();
+
+  // 情報テーブル (2列レイアウト)
+  const items = [
+    ['OU角度',       `${ouAng}°`],
+    ['OU位置 (X,Y)', `${ouX}, ${ouY} mm`],
+    ['OU寸法',       `${ouW} × ${ouD} mm`],
+    ['手術台角度',   `${tblAng}°`],
+    ['手術台寸法',   `${tblW} × ${tblD} mm`],
+    ['アームベース旋回', `${armSw}°`],
+    ['ガイド線角度オフセット', `${glAng}°`],
+    ['ガイド線／手術台 相対角', `${relAng.toFixed(1)}°`],
+    ['ロールイン角度', `${rollinAng}°`],
+    ['傾斜',         tiltStr],
+    ['カメラ距離',   `${camDist} mm`],
+  ];
+
+  const colW   = Math.floor((cvs.width - margin*2) / 2) - 10;
+  const rowH   = 22;
+  const startY = cvs.height + 34;
+  const half   = Math.ceil(items.length / 2);
+
+  items.forEach((item, i)=>{
+    const col  = i < half ? 0 : 1;
+    const row  = i < half ? i : i - half;
+    const baseX = margin + col * (colW + 20);
+    const baseY = startY + row * rowH;
+
+    // 背景帯 (偶数行)
+    if(row % 2 === 0){
+      oc.fillStyle = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)';
+      oc.fillRect(baseX, baseY, colW, rowH - 2);
+    }
+
+    oc.font = '11px sans-serif';
+    oc.fillStyle = mutedColor;
+    oc.textAlign = 'left';
+    oc.textBaseline = 'middle';
+    oc.fillText(item[0], baseX + 6, baseY + rowH/2 - 1);
+
+    oc.font = 'bold 11px sans-serif';
+    oc.fillStyle = textColor;
+    oc.textAlign = 'right';
+    oc.fillText(item[1], baseX + colW - 6, baseY + rowH/2 - 1);
+  });
+
+  const link = document.createElement('a');
+  link.download = name + '.png';
+  link.href = offCanvas.toDataURL('image/png');
+  link.click();
+  closeExportModal();
+}
+
+
+// ====== デフォルト値 ======
+const DEFAULTS_KEY = 'hinotori_defaults_v1';
+
+const DEFAULT_FIELDS = [
+  {id:'ou-w',       label:'OU 幅',           unit:'mm'},
+  {id:'ou-d',       label:'OU 奥行',          unit:'mm'},
+  {id:'ou-piv',     label:'回転軸オフセット', unit:'mm'},
+  {id:'ou-ang',     label:'OU角度',           unit:'°'},
+  {id:'ou-x',       label:'OU X位置',         unit:'mm'},
+  {id:'ou-y',       label:'OU Y位置',         unit:'mm'},
+  {id:'arm-sw',     label:'アームベース旋回',  unit:'°'},
+  {id:'arm-x',      label:'アームベース X',   unit:'mm'},
+  {id:'arm-y',      label:'アームベース Y',   unit:'mm'},
+  {id:'arm-bw',     label:'アームベース 幅',  unit:'mm'},
+  {id:'arm-bh',     label:'アームベース 長さ', unit:'mm'},
+  {id:'cam-x',      label:'カメラ Xオフセット', unit:'mm'},
+  {id:'cam-y',      label:'カメラ Yオフセット', unit:'mm'},
+  {id:'gl-ang',     label:'ガイド線 角度オフセット', unit:'°'},
+  {id:'gl-len',     label:'ガイド線 長さ',    unit:'mm'},
+  {id:'tbl-w',      label:'手術台 幅',        unit:'mm'},
+  {id:'tbl-d',      label:'手術台 長さ',      unit:'mm'},
+  {id:'tbl-ang',    label:'手術台 角度',      unit:'°'},
+  {id:'tbl-x',      label:'手術台 X位置',     unit:'mm'},
+  {id:'tbl-y',      label:'手術台 Y位置',     unit:'mm'},
+  {id:'port-x',     label:'カメラポート X',   unit:'mm'},
+  {id:'port-y',     label:'カメラポート Y',   unit:'mm'},
+  {id:'port-h',     label:'テーブルトップ底面〜腹壁 高さ',  unit:'mm'},
+  {id:'tol',        label:'許容範囲 直径',    unit:'mm'},
+  {id:'kbd-step',   label:'キーボード移動量', unit:'mm'},
+];
+
+const DEFAULT_SELECTS = [
+  {id:'tilt-type', label:'傾斜種別'},
+  {id:'bg-mode',   label:'背景色'},
+];
+
+const DEFAULT_CHECKS = [
+  {id:'show-grid',   label:'グリッド表示'},
+  {id:'show-dims',   label:'寸法ラベル表示'},
+  {id:'show-rollin', label:'ロールイン角表記'},
+  {id:'show-guide',  label:'ガイド線表示'},
+];
+
+
+
+
+
+
+
+function clearDefaults(){
+  if(!confirm('保存済みのデフォルト値をリセットしますか？')) return;
+  localStorage.removeItem(DEFAULTS_KEY);
+}
+
+
+
+
+
+function openHelpModal(){$('help-modal').classList.add('show');}
+function closeHelpModal(){$('help-modal').classList.remove('show');}
+$('help-modal').addEventListener('click',e=>{if(e.target===$('help-modal'))closeHelpModal();});
+
+function toggleDrawer(){
+  const sb=document.querySelector('.sidebar');const ov=$('drawer-overlay');
+  const isOpen=sb.classList.toggle('open');ov.classList.toggle('show',isOpen);
+}
+
+// 初期化
+renderTblPresetGrid();
+renderPresetList();
+renderPortList();
+initPaintUI();
+resize();
+window.addEventListener('load',()=>{resize();setTimeout(()=>{pushState();updateUndoBtn();},200);});
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+
+// ====== タッチ操作 ======
+function touchDist(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+function touchMid(t){return{x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2};}
+
+let touch={active:false,mode:'',lastDist:0,lastMid:{x:0,y:0},
+           ox:0,oy:0,oOUx:0,oOUy:0,oAng:0,sx:0,sy:0,moved:false,
+           oExPortX:0,oExPortY:0,touchPortId:null};
+
+cvs.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches;
+  touch.moved=false;
+  if(t.length===1){
+    const rect=cvs.getBoundingClientRect();
+    const wp=c2w(t[0].clientX-rect.left,t[0].clientY-rect.top);
+    touch.sx=t[0].clientX;touch.sy=t[0].clientY;
+    touch.ox=VIEW.px;touch.oy=VIEW.py;
+    touch.oOUx=gv('ou-x');touch.oOUy=gv('ou-y');
+    touch.oAng=gv('ou-ang');
+
+    if(addPortMode){
+      const label=$('new-port-label').value.trim()||`ポート${nextPortId}`;
+      const color=$('new-port-color').value||'#a855f7';
+      const size=parseFloat($('new-port-size').value)||12;
+      extraPorts.push({id:nextPortId++,label,color,size,x:wp.x,y:wp.y});
+      renderPortList();render();return;
+    }
+    if(measureMode){
+      if(measurePts.length<2){
+        measurePts.push({x:wp.x,y:wp.y});
+        if(measurePts.length===1){$('measure-txt').textContent='2点目をタップしてください';}
+        else{
+          const d=dist(measurePts[0],measurePts[1]);$('measure-txt').textContent='計測完了';
+          const badge=$('measure-badge');badge.textContent=d.toFixed(1)+' mm';badge.style.display='inline-block';
+        }
+        render();
+      }else{clearMeasure();}
+      return;
+    }
+    touch.active=true;
+    // 追加ポートのタッチ
+    const ep = getExtraPortAt(wp.x, wp.y);
+    if(ep){
+      touch.mode='extra-port';touch.touchPortId=ep.id;
+      touch.oExPortX=ep.x;touch.oExPortY=ep.y;
+    } else if(isInOU(wp.x,wp.y)){
+      // スマホモードに応じてtouch.modeを設定
+      touch.mode = (typeof _mode !== 'undefined' && _mode !== 'pan') ? _mode : 'ou';
+    } else {
+      touch.mode = 'pan';
+    }
+  }else if(t.length===2){
+    touch.active=true;touch.mode='pinch';
+    touch.lastDist=touchDist(t);touch.lastMid=touchMid(t);touch.oAng=gv('ou-ang');
+  }
+},{passive:false});
+
+cvs.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!touch.active)return;
+  const t=e.touches;
+  if(t.length===1&&touch.mode!=='pinch'){
+    const dx=(t[0].clientX-touch.sx),dy=(t[0].clientY-touch.sy);
+    if(Math.abs(dx)>1||Math.abs(dy)>1)touch.moved=true;
+    if(touch.mode==='extra-port'){
+      const ep=extraPorts.find(p=>p.id===touch.touchPortId);
+      if(ep){ep.x=touch.oExPortX+dx/VIEW.sc;ep.y=touch.oExPortY-dy/VIEW.sc;}
+    }else if(touch.mode==='pan'){VIEW.px=touch.ox+dx;VIEW.py=touch.oy+dy;}
+    else if(touch.mode==='ou'){$('ou-x').value=(touch.oOUx+dx/VIEW.sc).toFixed(1);$('ou-y').value=(touch.oOUy-dy/VIEW.sc).toFixed(1);}
+    render();
+  }else if(t.length===2){
+    const newDist=touchDist(t),newMid=touchMid(t);
+    const factor=newDist/touch.lastDist;
+    const mx=newMid.x-cvs.getBoundingClientRect().left;
+    const my=newMid.y-cvs.getBoundingClientRect().top;
+    VIEW.px=(VIEW.px-mx)*factor+mx;VIEW.py=(VIEW.py-my)*factor+my;
+    VIEW.sc=Math.max(0.02,Math.min(1,VIEW.sc*factor));
+    touch.lastDist=newDist;touch.lastMid=newMid;render();
+  }
+},{passive:false});
+
+cvs.addEventListener('touchend',e=>{
+  e.preventDefault();
+  if(touch.mode==='extra-port')renderPortList();
+  // 選択判定はスマホでは無効
+  if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;}
+},{passive:false});
+</script>
+
+<div id="sp-wrap">
+  <div id="sp-modebar">
+    <div class="sp-mb sp-on" id="smb-pan"  onclick="spMode('pan')">🖐 スクロール</div>
+    <div class="sp-mb"       id="smb-ou"   onclick="spMode('ou')">🔷 OU移動</div>
+    <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🏥 台移動</div>
+    <div class="sp-mb"       id="smb-rot"  onclick="spMode('rot')">🔄 OU回転</div>
+  </div>
+  <div id="sp-dpad">
+    <div class="sp-row"><div class="sp-blank"></div><div class="sp-btn" id="spBU">↑</div><div class="sp-blank"></div></div>
+    <div class="sp-row"><div class="sp-btn" id="spBL">←</div><div class="sp-center" id="spBC">OU<br>移動</div><div class="sp-btn" id="spBR">→</div></div>
+    <div class="sp-row"><div class="sp-blank"></div><div class="sp-btn" id="spBD">↓</div><div class="sp-blank"></div></div>
+  </div>
+  <!-- 回転UI（rot モード用） -->
+  <div id="sp-rotpad">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:2px;">OU回転</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="sp-btn sp-rot-btn" id="spRL" style="width:64px;height:64px;font-size:22px;border-color:#a78bfa;flex-direction:column;gap:2px;">
+          <span>↺</span><span style="font-size:9px;color:#a78bfa;">左回転</span>
+        </div>
+        <div style="width:56px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+          <div id="sp-rot-angle" style="color:#a78bfa;font-size:14px;font-weight:700;min-width:48px;text-align:center;">0°</div>
+          <div style="color:#5a6480;font-size:9px;">角度</div>
+        </div>
+        <div class="sp-btn sp-rot-btn" id="spRR" style="width:64px;height:64px;font-size:22px;border-color:#a78bfa;flex-direction:column;gap:2px;">
+          <span>↻</span><span style="font-size:9px;color:#a78bfa;">右回転</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <div class="sp-btn" id="spRSlow" style="width:64px;height:36px;font-size:10px;border-color:#6d5acd;">微調整</div>
+        <div class="sp-btn" id="spRFast" style="width:64px;height:36px;font-size:10px;border-color:#6d5acd;">大回転</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="sp-info"></div>
+
+
+<script>
+(function(){
+  var _mode = 'pan';
+  var _timer = null;
+  var _dir = '';
+  window.spCurrentMode = 'pan';
+  var _rotStep = 2;
+
+  function spUpdateRotAngle() {
+    var ae = document.getElementById('ou-ang');
+    var disp = document.getElementById('sp-rot-angle');
+    if(ae && disp) disp.textContent = parseFloat(ae.value||0).toFixed(1) + '°';
+  }
+
+  window.spMode = function(m) {
+    _mode = m;
+    window.spCurrentMode = m;
+    ['pan','ou','tbl','rot'].forEach(function(k){
+      var b = document.getElementById('smb-'+k);
+      if(b) b.className = 'sp-mb' + (k===m?' sp-on':'');
+    });
+    var dpad   = document.getElementById('sp-dpad');
+    var rotpad = document.getElementById('sp-rotpad');
+    var info   = document.getElementById('sp-info');
+    var center = document.getElementById('spBC');
+    var ctexts = {pan:'視点<br>移動',ou:'OU<br>移動',tbl:'台<br>移動',rot:'回転'};
+    var itexts = {pan:'',ou:'🔷 OUをドラッグで移動',tbl:'🏥 台をドラッグで移動',rot:'🔄 ↺↻ボタンで回転'};
+    if(dpad)  { dpad.className   = 'sp-dpad'   + (m!=='rot'?' sp-show':''); }
+    if(rotpad){ rotpad.className = 'sp-rotpad' + (m==='rot'?' sp-show':''); }
+    if(info)  { info.innerHTML=itexts[m]||''; info.className='sp-info'+(m!=='pan'?' sp-show':''); }
+    if(center){ center.innerHTML=ctexts[m]||''; }
+    if(m==='rot') spUpdateRotAngle();
+  };
+
+  function spStep(dir) {
+    var step = parseFloat((document.getElementById('kbd-step')||{value:10}).value)||10;
+    var ouA = d2r(parseFloat((document.getElementById('ou-ang')||{value:0}).value)||0);
+    var lx=0,ly=0;
+    if(dir==='u')ly=step; else if(dir==='d')ly=-step;
+    else if(dir==='r')lx=step; else if(dir==='l')lx=-step;
+    if(_mode==='pan'){
+      VIEW.px = VIEW.px - lx * VIEW.sc * 8;
+      VIEW.py = VIEW.py + ly * VIEW.sc * 8;
+      render();
+      return;
+    }
+    if(_mode==='ou'){
+      var w=rot(lx,ly,ouA);
+      var xe=document.getElementById('ou-x'),ye=document.getElementById('ou-y');
+      if(xe)xe.value=(parseFloat(xe.value||0)+w.x).toFixed(1);
+      if(ye)ye.value=(parseFloat(ye.value||0)+w.y).toFixed(1);
+      render();
+    } else if(_mode==='tbl'){
+      var tA=d2r(parseFloat((document.getElementById('tbl-ang')||{value:0}).value)||0);
+      var w2=rot(lx,ly,tA);
+      var xe2=document.getElementById('tbl-x'),ye2=document.getElementById('tbl-y');
+      if(xe2)xe2.value=(parseFloat(xe2.value||0)+w2.x).toFixed(1);
+      if(ye2)ye2.value=(parseFloat(ye2.value||0)+w2.y).toFixed(1);
+      render();
+    } else if(_mode==='rot'){
+      var delta=(lx>0||ly>0)?_rotStep:-_rotStep;
+      var ae=document.getElementById('ou-ang'),an=document.getElementById('ou-ang-num');
+      if(ae){var nv=Math.max(-180,Math.min(180,parseFloat(ae.value||0)+delta));ae.value=nv;if(an)an.value=nv.toFixed(1);render();spUpdateRotAngle();}
+    }
+  }
+
+  function bindBtn(id,dir){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.addEventListener('touchstart',function(e){
+      e.preventDefault();e.stopPropagation();
+      spStep(dir);
+      _dir=dir;
+      _timer=setInterval(function(){spStep(_dir);},100);
+    },{passive:false});
+    el.addEventListener('touchend',function(e){
+      e.preventDefault();e.stopPropagation();
+      clearInterval(_timer);_timer=null;_dir='';
+    },{passive:false});
+    el.addEventListener('touchcancel',function(e){
+      e.preventDefault();
+      clearInterval(_timer);_timer=null;_dir='';
+    },{passive:false});
+  }
+  
+  function bindRotBtn(id, delta) {
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart', function(e){
+      e.preventDefault(); e.stopPropagation();
+      spRotate(delta * _rotStep);
+      _timer = setInterval(function(){ spRotate(delta * _rotStep); }, 100);
+    },{passive:false});
+    el.addEventListener('touchend', function(e){
+      e.preventDefault(); e.stopPropagation();
+      clearInterval(_timer); _timer=null;
+    },{passive:false});
+    el.addEventListener('touchcancel', function(e){
+      e.preventDefault(); clearInterval(_timer); _timer=null;
+    },{passive:false});
+  }
+  
+  function spRotate(delta) {
+    var ae = document.getElementById('ou-ang');
+    var an = document.getElementById('ou-ang-num');
+    if(!ae) return;
+    var nv = Math.max(-180, Math.min(180, parseFloat(ae.value||0) + delta));
+    ae.value = nv; if(an) an.value = nv.toFixed(1);
+    render();
+    spUpdateRotAngle();
+    spUpdateRotAngle();
+  }
+  
+  function bindStepBtn(id, isFast) {
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart', function(e){
+      e.preventDefault(); e.stopPropagation();
+      _rotStep = isFast ? 10 : 0.5;
+      el.style.borderColor = '#00d4ff';
+    },{passive:false});
+    el.addEventListener('touchend', function(e){
+      e.preventDefault(); e.stopPropagation();
+      el.style.borderColor = '';
+    },{passive:false});
+  }
+
+  // 既存のタッチハンドラのtouchstartにフックを追加
+  // cvs.addEventListener後に実行されるよう遅延
+  function hookTouch(){
+    var cvs = document.getElementById('c');
+    if(!cvs) return;
+
+    var _origStart = null;
+    var _spOUX=0,_spOUY=0,_spTblX=0,_spTblY=0,_spAng=0,_spSX=0,_spSY=0,_spActive=false;
+
+    // touchstartにフック（既存より後に実行）
+    cvs.addEventListener('touchstart',function(e){
+      if(e.touches.length>=2){
+        // 2本指タッチはピンチズーム → sp操作を無効化
+        _spActive=false;
+        return;
+      }
+      if(e.touches.length===1 && _mode!=='pan'){
+        _spSX=e.touches[0].clientX; _spSY=e.touches[0].clientY;
+        _spOUX=parseFloat((document.getElementById('ou-x')||{value:0}).value)||0;
+        _spOUY=parseFloat((document.getElementById('ou-y')||{value:0}).value)||0;
+        _spTblX=parseFloat((document.getElementById('tbl-x')||{value:0}).value)||0;
+        _spTblY=parseFloat((document.getElementById('tbl-y')||{value:0}).value)||0;
+        _spAng=parseFloat((document.getElementById('ou-ang')||{value:0}).value)||0;
+        _spActive=true;
+      } else {
+        _spActive=false;
+      }
+    },{passive:true});
+
+    cvs.addEventListener('touchmove',function(e){
+      if(!_spActive||e.touches.length!==1||_mode==='pan') return;
+      var dx=e.touches[0].clientX-_spSX;
+      var dy=e.touches[0].clientY-_spSY;
+      if(Math.abs(dx)<3&&Math.abs(dy)<3) return;
+      var sc=VIEW.sc;
+      if(_mode==='ou'){
+        var xe=document.getElementById('ou-x'),ye=document.getElementById('ou-y');
+        if(xe)xe.value=(_spOUX+dx/sc).toFixed(1);
+        if(ye)ye.value=(_spOUY-dy/sc).toFixed(1);
+        render();
+      } else if(_mode==='tbl'){
+        var xe2=document.getElementById('tbl-x'),ye2=document.getElementById('tbl-y');
+        if(xe2)xe2.value=(_spTblX+dx/sc).toFixed(1);
+        if(ye2)ye2.value=(_spTblY-dy/sc).toFixed(1);
+        render();
+      } else if(_mode==='rot'){
+        var nv=Math.max(-180,Math.min(180,_spAng+dx*0.4));
+        var ae=document.getElementById('ou-ang'),an=document.getElementById('ou-ang-num');
+        if(ae){ae.value=nv;if(an)an.value=nv.toFixed(1);render();}
+      }
+    },{passive:false});
+
+    cvs.addEventListener('touchend',function(e){
+      _spActive=false;
+    },{passive:true});
+  }
+
+  // DOM構築完了後に初期化
+  function initAll() {
+    bindBtn('spBU','u'); bindBtn('spBD','d');
+    bindBtn('spBL','l'); bindBtn('spBR','r');
+    bindRotBtn('spRL', +1);
+    bindRotBtn('spRR', -1);
+    bindStepBtn('spRSlow', false);
+    bindStepBtn('spRFast', true);
+    hookTouch();
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+})();
+
+// 初期設定値
+function resetToInitial(){
+  if(!confirm('初期設定値に戻します。よろしいですか？')) return;
+  var s = function(id, val){ var el = document.getElementById(id); if(el) el.value = val; };
+  // OU
+  s('ou-w',   970);
+  s('ou-d',   1150);
+  s('ou-piv', 560);
+  s('ou-ang', 45);   s('ou-ang-num', 45);
+  s('ou-x',   1103);
+  s('ou-y',   -1886);
+  // ポジショニングカメラ
+  s('arm-sw',     0); s('arm-sw-num', 0);
+  s('arm-x',    550);
+  s('arm-y',   1200);
+  s('arm-bw',   330);
+  s('arm-bh',  1000);
+  s('cam-x',     0);
+  s('cam-y',     0);
+  s('gl-ang',   90); s('gl-ang-num', 90);
+  s('gl-len', 5000);
+  var showGuide = document.getElementById('show-guide');
+  if(showGuide) showGuide.checked = true;
+  // 手術台
+  s('tbl-w',  560);
+  s('tbl-d', 1800);
+  s('tbl-ang', -45); s('tbl-ang-num', -45);
+  s('tbl-x',    0);
+  s('tbl-y',    0);
+  // カメラポート
+  s('port-x', 0);
+  s('port-y', 0);
+  // 傾斜補正
+  var tiltType = document.getElementById('tilt-type');
+  if(tiltType) tiltType.value = 'none';
+  s('tilt-ang', 0); s('tilt-ang-num', 0);
+  s('port-h', 5000);
+  // 表示設定
+  s('rollin-arrow-len', 100);
+  var bgMode = document.getElementById('bg-mode');
+  if(bgMode){ bgMode.value = 'light'; changeBG(); }
+  // 再描画
+  render();
+}
+
+</script>
+
+</body>
+</html>
