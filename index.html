@@ -271,6 +271,11 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 }
 .sl-btn:active { background:var(--accent); color:#000; }
 
+
+.obj-item{display:flex;align-items:center;justify-content:space-between;padding:4px 6px;background:var(--surf2);border-radius:6px;margin-bottom:4px;font-size:11px;gap:6px;}
+.obj-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.obj-del-btn{flex-shrink:0;background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:2px 4px;}
+
 </style>
 </head>
 <body>
@@ -459,6 +464,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <div class="sec">
       <div class="sec-hd" onclick="toggleSec(this)"><span>📐 傾斜補正</span><span class="arr">▶</span></div>
       <div class="sec-bd">
+        <div class="f"><label>テーブルトップ底面〜カメラポート腹壁 高さ (mm)</label><input type="number" id="port-h" value="500" min="0" max="2000" oninput="render()"></div>
         <div class="f"><label>傾斜種別</label>
           <select id="tilt-type" onchange="render()">
             <option value="none">なし（水平）</option>
@@ -474,8 +480,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
             <input type="number" id="tilt-ang-num" min="0" max="45" step="0.5" value="0" oninput="onTiltAngleNum()">
           </div>
         </div>
-        <div class="f"><label>テーブルトップ底面〜カメラポート腹壁 高さ (mm)</label><input type="number" id="port-h" value="500" min="0" max="600" oninput="render()"></div>
-        <div id="tilt-info" style="font-size:10px;color:var(--accent);margin-top:3px"></div>
+                <div id="tilt-info" style="font-size:10px;color:var(--accent);margin-top:3px"></div>
           <div class="f" style="margin-top:8px"><label>左右傾斜</label>
             <select id="tilt-lr-type" onchange="render()">
               <option value="none">なし（水平）</option>
@@ -491,6 +496,49 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
               <input type="number" id="tilt-lr-ang-num" min="0" max="45" step="0.5" value="0" oninput="onTiltLRAngleNum()" style="width:60px">
             </div>
           </div>
+      </div>
+    </div>
+
+
+    <div class="sec">
+      <div class="sec-hd" onclick="toggleSec(this)"><span>📦 オブジェクト配置</span><span class="arr">▶</span></div>
+      <div class="sec-bd">
+        <div class="f"><label>種類</label>
+          <select id="obj-type" onchange="onObjTypeChange()">
+            <option value="rect">四角形</option>
+            <option value="circle">円</option>
+            <option value="text">テキスト</option>
+          </select>
+        </div>
+        <div id="obj-size-rect">
+          <div class="row">
+            <div class="f"><label>幅 (mm)</label><input type="number" id="obj-w" value="200" min="1" max="5000"></div>
+            <div class="f"><label>高さ (mm)</label><input type="number" id="obj-h" value="200" min="1" max="5000"></div>
+          </div>
+        </div>
+        <div id="obj-size-circle" style="display:none">
+          <div class="f"><label>直径 (mm)</label><input type="number" id="obj-r" value="200" min="1" max="5000"></div>
+        </div>
+        <div id="obj-size-text" style="display:none">
+          <div class="f"><label>テキスト</label><input type="text" id="obj-text" value="テキスト" style="width:100%"></div>
+          <div class="f"><label>フォントサイズ (mm)</label><input type="number" id="obj-font-size" value="100" min="10" max="1000"></div>
+        </div>
+        <div class="f"><label>ラベル</label><input type="text" id="obj-label" value="" placeholder="（省略可）" style="width:100%"></div>
+        <div class="row">
+          <div class="f"><label>塗り色</label><input type="color" id="obj-color" value="#f97316" style="width:60px;height:32px;padding:2px"></div>
+          <div class="f"><label>枠線色</label><input type="color" id="obj-stroke-color" value="#f97316" style="width:60px;height:32px;padding:2px"></div>
+        </div>
+        <div class="row">
+          <div class="f"><label>枠線幅 (px)</label><input type="number" id="obj-stroke-width" value="2" min="0" max="20"></div>
+          <div class="f"><label>塗り透明度 (%)</label><input type="number" id="obj-opacity" value="20" min="0" max="100"></div>
+        </div>
+        <div class="row">
+          <div class="f"><label>X位置 (mm)</label><input type="number" id="obj-x" value="0"></div>
+          <div class="f"><label>Y位置 (mm)</label><input type="number" id="obj-y" value="0"></div>
+        </div>
+        <div class="f"><label>回転角度 (°)</label><input type="number" id="obj-ang" value="0" min="-180" max="180"></div>
+        <button class="btn btn-acc" onclick="addCustomObj()" style="width:100%;margin-top:6px">＋ 配置する</button>
+        <div id="obj-list" style="margin-top:8px"></div>
       </div>
     </div>
 
@@ -915,8 +963,8 @@ function getPort(corr=true){
     const lrAngEl=document.getElementById('tilt-lr-ang');
     if(lrEl&&lrAngEl){
       const lrt=lrEl.value,lra=d2r(parseFloat(lrAngEl.value)||0);
-      if(lrt==='right') dx= h*Math.tan(lra);
-      if(lrt==='left')  dx=-h*Math.tan(lra);
+      if(lrt==='right') dx=-h*Math.tan(lra);
+      if(lrt==='left')  dx= h*Math.tan(lra);
     }
   }
   const r=rot(ox+dx,oy+dy,d2r(gv('tbl-ang')));
@@ -996,6 +1044,134 @@ function undoState(){
 
 
 // ====== DRAW ======
+
+// ===== オブジェクト配置 =====
+var customObjs = [];
+var nextObjId = 1;
+
+function onObjTypeChange(){
+  var t = document.getElementById('obj-type').value;
+  document.getElementById('obj-size-rect').style.display   = t==='rect'   ? '' : 'none';
+  document.getElementById('obj-size-circle').style.display = t==='circle' ? '' : 'none';
+  document.getElementById('obj-size-text').style.display   = t==='text'   ? '' : 'none';
+}
+
+function addCustomObj(){
+  var t     = document.getElementById('obj-type').value;
+  var color = document.getElementById('obj-color').value;
+  var label = document.getElementById('obj-label').value.trim();
+  var x     = parseFloat(document.getElementById('obj-x').value)||0;
+  var y     = parseFloat(document.getElementById('obj-y').value)||0;
+  var ang   = parseFloat(document.getElementById('obj-ang').value)||0;
+  var strokeColor = document.getElementById('obj-stroke-color').value;
+  var strokeWidth = parseFloat(document.getElementById('obj-stroke-width').value)||2;
+  var opacity     = parseFloat(document.getElementById('obj-opacity').value);
+  if(isNaN(opacity)) opacity=20;
+  var obj = {id:nextObjId++, type:t, color:color, strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity, label:label, x:x, y:y, ang:ang};
+  if(t==='rect'){
+    obj.w = parseFloat(document.getElementById('obj-w').value)||200;
+    obj.h = parseFloat(document.getElementById('obj-h').value)||200;
+  } else if(t==='circle'){
+    obj.r = parseFloat(document.getElementById('obj-r').value)||200;
+  } else if(t==='text'){
+    obj.text     = document.getElementById('obj-text').value||'テキスト';
+    obj.fontSize = parseFloat(document.getElementById('obj-font-size').value)||100;
+  }
+  customObjs.push(obj);
+  renderObjList();
+  render();
+}
+
+function deleteCustomObj(id){
+  customObjs = customObjs.filter(function(o){ return o.id !== id; });
+  renderObjList();
+  render();
+}
+
+function renderObjList(){
+  var el = document.getElementById('obj-list');
+  if(!el) return;
+  if(!customObjs.length){ el.innerHTML='<div style="font-size:10px;color:var(--muted)">配置なし</div>'; return; }
+  el.innerHTML = customObjs.map(function(o){
+    var name = o.label || (o.type==='rect'?'四角形':o.type==='circle'?'円':o.text||'テキスト');
+    return '<div class="obj-item"><span class="obj-item-label">'+name+'</span>'
+      + '<button class="obj-del-btn" onclick="deleteCustomObj('+o.id+')">✕</button></div>';
+  }).join('');
+}
+
+function getCustomObjAt(wx, wy){
+  // タップ位置に近いオブジェクトを返す（後ろから探して最前面優先）
+  for(var i=customObjs.length-1;i>=0;i--){
+    var o=customObjs[i];
+    var dx=wx-o.x, dy=wy-o.y;
+    var hit=false;
+    if(o.type==='rect'){
+      // 回転考慮
+      var a=d2r(o.ang);
+      var lx= dx*Math.cos(a)+dy*Math.sin(a);
+      var ly=-dx*Math.sin(a)+dy*Math.cos(a);
+      hit=Math.abs(lx)<=o.w/2+30 && Math.abs(ly)<=o.h/2+30;
+    } else if(o.type==='circle'){
+      hit=Math.sqrt(dx*dx+dy*dy)<=o.r/2+30;
+    } else if(o.type==='text'){
+      hit=Math.abs(dx)<=o.fontSize*2 && Math.abs(dy)<=o.fontSize;
+    }
+    if(hit) return o;
+  }
+  return null;
+}
+
+function drawCustomObjs(dark){
+  if(!customObjs) return;
+  customObjs.forEach(function(o){
+    var c = w2c(o.x, o.y);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(-d2r(o.ang));
+    var sc = o.strokeColor || o.color;
+    var sw = (o.strokeWidth !== undefined) ? o.strokeWidth : 2;
+    var op = (o.opacity !== undefined) ? o.opacity : 20;
+    ctx.strokeStyle = sc;
+    ctx.fillStyle   = o.color;
+    ctx.globalAlpha = op / 100;
+    ctx.lineWidth   = sw;
+    if(o.type==='rect'){
+      var rw = o.w*VIEW.sc, rh = o.h*VIEW.sc;
+      // 塗り（透明度あり）
+      ctx.beginPath(); ctx.rect(-rw/2,-rh/2,rw,rh);
+      ctx.fill();
+      // 枠線（透明度なし）
+      if(sw>0){ ctx.globalAlpha=1; ctx.stroke(); ctx.globalAlpha=op/100; }
+      if(o.label){
+        ctx.globalAlpha=1; ctx.fillStyle=sc;
+        ctx.font='bold '+Math.max(10,12)+'px sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(o.label,0,0);
+      }
+    } else if(o.type==='circle'){
+      var rr = o.r/2*VIEW.sc;
+      ctx.beginPath(); ctx.arc(0,0,rr,0,Math.PI*2);
+      ctx.fill();
+      if(sw>0){ ctx.globalAlpha=1; ctx.stroke(); ctx.globalAlpha=op/100; }
+      if(o.label){
+        ctx.globalAlpha=1; ctx.fillStyle=sc;
+        ctx.font='bold '+Math.max(10,12)+'px sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(o.label,0,0);
+      }
+    } else if(o.type==='text'){
+      var fs = o.fontSize * VIEW.sc;
+      ctx.font='bold '+Math.max(8,fs)+'px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.globalAlpha=1; ctx.fillStyle=o.color;
+      ctx.fillText(o.text,0,0);
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+
 function render(){
   // 状態をデバウンスでスタックに積む
   clearTimeout(_stateTimer);
@@ -1018,6 +1194,7 @@ function render(){
   drawExtraPorts(dark);
   drawRollinAngle(dark);
   drawMeasure(dark);
+  drawCustomObjs(dark);
   drawPaintStrokes(dark);
   const d=dist(cam,port);
   updateStatus(d,cam);
@@ -1994,9 +2171,14 @@ function undoPaint(){
 }
 
 function clearPaint(){
-  if(!confirm('ペイントをすべて消去しますか？')) return;
+  var ok = true;
+  if(typeof confirm !== 'undefined'){
+    try { ok = confirm('ペイントをすべて消去しますか？'); } catch(e) { ok = true; }
+  }
+  if(!ok) return;
   paintUndo.push(JSON.parse(JSON.stringify(paintStrokes)));
   paintStrokes = [];
+  paintCurrent = null;
   render();
 }
 
@@ -2408,12 +2590,14 @@ function touchMid(t){return{x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1]
 
 let touch={active:false,mode:'',lastDist:0,lastMid:{x:0,y:0},
            ox:0,oy:0,oOUx:0,oOUy:0,oAng:0,sx:0,sy:0,moved:false,
-           oExPortX:0,oExPortY:0,touchPortId:null};
+           oExPortX:0,oExPortY:0,touchPortId:null,
+           touchObjId:null,oCustomObjX:0,oCustomObjY:0};
 
 cvs.addEventListener('touchstart',e=>{
   e.preventDefault();
   // ペイントモード優先
   if(paintMode && e.touches.length===1){
+    touch.active = false; // ペイント中は他の操作を無効化
     const fakeEvt = {clientX:e.touches[0].clientX, clientY:e.touches[0].clientY};
     paintMouseDown(fakeEvt);
     return;
@@ -2450,9 +2634,13 @@ cvs.addEventListener('touchstart',e=>{
     touch.active=true;
     // 追加ポートのタッチ
     const ep = getExtraPortAt(wp.x, wp.y);
+    const co = getCustomObjAt ? getCustomObjAt(wp.x, wp.y) : null;
     if(ep){
       touch.mode='extra-port';touch.touchPortId=ep.id;
       touch.oExPortX=ep.x;touch.oExPortY=ep.y;
+    } else if(co && (window.spCurrentMode||'pan')==='pan'){
+      touch.mode='custom-obj';touch.touchObjId=co.id;
+      touch.oCustomObjX=co.x;touch.oCustomObjY=co.y;
     } else {
       var cm = window.spCurrentMode || 'pan';
       if(cm === 'pan'){
@@ -2487,6 +2675,9 @@ cvs.addEventListener('touchmove',e=>{
     if(touch.mode==='extra-port'){
       const ep=extraPorts.find(p=>p.id===touch.touchPortId);
       if(ep){ep.x=touch.oExPortX+dx/VIEW.sc;ep.y=touch.oExPortY-dy/VIEW.sc;}
+    }else if(touch.mode==='custom-obj'){
+      var co=customObjs.find(function(o){return o.id===touch.touchObjId;});
+      if(co){co.x=touch.oCustomObjX+dx/VIEW.sc;co.y=touch.oCustomObjY-dy/VIEW.sc;}
     }else if(touch.mode==='pan'){
       var cm2 = window.spCurrentMode || 'pan';
       if(cm2==='pan'){ VIEW.px=touch.ox+dx;VIEW.py=touch.oy+dy; }
@@ -2524,9 +2715,11 @@ cvs.addEventListener('touchend',e=>{
     return;
   }
   if(touch.mode==='extra-port')renderPortList();
+  if(touch.mode==='custom-obj')renderObjList();
   // 選択判定はスマホでは無効
-  if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;}
+  if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;touch.touchObjId=null;}
 },{passive:false});
+
 </script>
 
 <div id="sp-wrap">
@@ -2725,6 +2918,7 @@ cvs.addEventListener('touchend',e=>{
     },{passive:true});
 
     cvs.addEventListener('touchmove',function(e){
+      if(paintMode) return; // ペイント中はhookTouchを無効化
       if(!_spActive||e.touches.length!==1||_mode==='pan') return;
       var dx=e.touches[0].clientX-_spSX;
       var dy=e.touches[0].clientY-_spSY;
@@ -2879,6 +3073,7 @@ function resetToInitial(){
   // 再描画
   render();
 }
+
 
 </script>
 
