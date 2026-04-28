@@ -227,6 +227,8 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
   pointer-events:auto;
 }
 #sp-dpad.sp-show{display:flex;}
+#sp-meas-dpad{position:absolute;bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:8px;display:none;flex-direction:column;align-items:center;gap:3px;pointer-events:auto;}
+#sp-meas-dpad.sp-show{display:flex;}
 .sp-row{display:flex;gap:3px;}
 .sp-btn{
   width:56px;height:56px;
@@ -276,6 +278,25 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 .obj-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .obj-del-btn{flex-shrink:0;background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:2px 4px;}
 
+
+.ang-presets{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap;}
+.ang-preset-btn{padding:3px 8px;background:var(--surf2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
+.ang-preset-btn:active{background:var(--accent);color:#000;border-color:var(--accent);}
+
+
+#place-mode-btn.active{border-color:#00d4ff!important;color:#00d4ff!important;background:rgba(0,212,255,0.15);}
+.obj-preset-item{display:flex;align-items:center;gap:4px;padding:4px 6px;background:var(--surf2);border-radius:6px;margin-bottom:3px;font-size:11px;}
+.obj-preset-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent);}
+.obj-preset-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:1px 3px;}
+
+
+.preset-item{display:flex;align-items:center;gap:4px;padding:5px 6px;background:var(--surf2);border-radius:6px;margin-bottom:4px;font-size:11px;}
+.preset-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:500;}
+.preset-lock-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:1px 3px;opacity:0.7;}
+.preset-del-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:1px 3px;}
+.preset-item.locked{border:1px solid #f59e0b;}
+.preset-item.locked .preset-item-name{color:#f59e0b;}
+
 </style>
 </head>
 <body>
@@ -294,8 +315,6 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <button class="btn" onclick="saveAsInitial()" title="現在の設定を初期設定として保存" style="border-color:#a78bfa;color:#a78bfa;">💾 初期値保存</button>
     <button class="btn" onclick="resetView()" title="ビューをリセット">🎯 ビューリセット</button>
     <button class="btn" onclick="centerOrigin()" title="X:0,Y:0を画面中心に">⊕ 原点へ</button>
-    <button class="btn" onclick="zoomStep(1.25)" title="拡大">＋</button>
-    <button class="btn" onclick="zoomStep(0.8)" title="縮小">－</button>
     <button class="btn" onclick="alignOU()" title="OUをカメラポートに自動整列">⚡ 自動整列</button>
     <button class="btn" id="measure-btn" onclick="toggleMeasure()" title="2点間距離を計測">📏 距離計測</button>
     <button class="btn" id="add-port-btn" onclick="toggleAddPortMode()" title="追加ポートを配置">📍 ポート追加</button>
@@ -324,6 +343,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
             <button class="sl-btn" onclick="slStep('ou-ang',-180,180,0.5,+1)" title="増やす">＋</button>
             <input type="number" id="ou-ang-num" min="-180" max="180" step="0.5" value="45" oninput="onOUAngleNum()">
           </div>
+          <div class="ang-presets"><button class="ang-preset-btn" onclick="setAng('ou-ang','ou-ang-num',0,'onOUAngle')">0°</button><button class="ang-preset-btn" onclick="setAng('ou-ang','ou-ang-num',45,'onOUAngle')">45°</button><button class="ang-preset-btn" onclick="setAng('ou-ang','ou-ang-num',90,'onOUAngle')">90°</button><button class="ang-preset-btn" onclick="setAng('ou-ang','ou-ang-num',-45,'onOUAngle')">-45°</button><button class="ang-preset-btn" onclick="setAng('ou-ang','ou-ang-num',-90,'onOUAngle')">-90°</button></div>
         </div>
         <div class="row">
           <div class="f"><label>X位置 (mm)</label><input type="number" id="ou-x" value="1103" oninput="render()"></div>
@@ -331,7 +351,15 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
         </div>
 
         <div class="f" style="margin-top:6px"><label>移動量 (mm/step)</label><input type="number" id="kbd-step" value="10" min="1" max="200" oninput=""></div>
-      </div>
+              <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">⭐ OUプリセット</div>
+          <div style="display:flex;gap:4px;margin-bottom:5px">
+            <input type="text" id="preset-name" placeholder="プリセット名" style="flex:1;min-width:0">
+            <button class="btn btn-acc" onclick="saveOUCamPreset()">💾 保存</button>
+          </div>
+          <div id="ou-cam-preset-list"></div>
+        </div>
+</div>
     </div>
 
     <div class="sec">
@@ -344,6 +372,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
             <button class="sl-btn" onclick="slStep('arm-sw',-180,180,0.5,+1)" title="増やす">＋</button>
             <input type="number" id="arm-sw-num" min="-180" max="180" step="0.5" value="0" oninput="onArmSwivelNum()">
           </div>
+          <div class="ang-presets"><button class="ang-preset-btn" onclick="setAng('arm-sw','arm-sw-num',0,'onArmSw')">0°</button><button class="ang-preset-btn" onclick="setAng('arm-sw','arm-sw-num',45,'onArmSw')">45°</button><button class="ang-preset-btn" onclick="setAng('arm-sw','arm-sw-num',90,'onArmSw')">90°</button><button class="ang-preset-btn" onclick="setAng('arm-sw','arm-sw-num',-45,'onArmSw')">-45°</button><button class="ang-preset-btn" onclick="setAng('arm-sw','arm-sw-num',-90,'onArmSw')">-90°</button></div>
         </div>
         <div class="row">
           <div class="f"><label>アームベース中心 X (mm)</label><input type="number" id="arm-x" value="550" oninput="render()"></div>
@@ -366,6 +395,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
             <button class="sl-btn" onclick="slStep('gl-ang',-180,180,0.5,+1)" title="増やす">＋</button>
             <input type="number" id="gl-ang-num" min="-180" max="180" step="0.5" value="90" oninput="onGuideAngleNum()">
           </div>
+          <div class="ang-presets"><button class="ang-preset-btn" onclick="setAng('gl-ang','gl-ang-num',0,'onGuideAng')">0°</button><button class="ang-preset-btn" onclick="setAng('gl-ang','gl-ang-num',90,'onGuideAng')">90°</button></div>
         </div>
         <div class="f"><label>ガイド線 長さ (mm)</label><input type="number" id="gl-len" value="5000" min="100" max="15000" oninput="render()"></div>
       </div>
@@ -409,6 +439,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
             <button class="sl-btn" onclick="slStep('tbl-ang',-180,180,0.5,+1)" title="増やす">＋</button>
             <input type="number" id="tbl-ang-num" min="-180" max="180" step="0.5" value="-45" oninput="onTableAngleNum()">
           </div>
+          <div class="ang-presets"><button class="ang-preset-btn" onclick="setAng('tbl-ang','tbl-ang-num',0,'onTableAngle')">0°</button><button class="ang-preset-btn" onclick="setAng('tbl-ang','tbl-ang-num',45,'onTableAngle')">45°</button><button class="ang-preset-btn" onclick="setAng('tbl-ang','tbl-ang-num',90,'onTableAngle')">90°</button><button class="ang-preset-btn" onclick="setAng('tbl-ang','tbl-ang-num',-45,'onTableAngle')">-45°</button><button class="ang-preset-btn" onclick="setAng('tbl-ang','tbl-ang-num',-90,'onTableAngle')">-90°</button></div>
         </div>
         <div class="row">
           <div class="f"><label>X位置 (mm)</label><input type="number" id="tbl-x" value="0" oninput="render()"></div>
@@ -537,7 +568,13 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
           <div class="f"><label>Y位置 (mm)</label><input type="number" id="obj-y" value="0"></div>
         </div>
         <div class="f"><label>回転角度 (°)</label><input type="number" id="obj-ang" value="0" min="-180" max="180"></div>
-        <button class="btn btn-acc" onclick="addCustomObj()" style="width:100%;margin-top:6px">＋ 配置する</button>
+          <div class="ang-presets"><button class="ang-preset-btn" onclick="setAng('obj-ang','obj-ang',0,'')">0°</button><button class="ang-preset-btn" onclick="setAng('obj-ang','obj-ang',45,'')">45°</button><button class="ang-preset-btn" onclick="setAng('obj-ang','obj-ang',90,'')">90°</button><button class="ang-preset-btn" onclick="setAng('obj-ang','obj-ang',-45,'')">-45°</button><button class="ang-preset-btn" onclick="setAng('obj-ang','obj-ang',-90,'')">-90°</button></div>
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button class="btn btn-acc" onclick="addCustomObj()" style="flex:1">＋ 配置</button>
+          <button class="btn" onclick="addCustomObj(true)" style="flex:1;border-color:#a78bfa;color:#a78bfa" title="現在の設定をプリセットとして保存">💾 保存</button>
+          <button class="btn" onclick="togglePlaceMode()" id="place-mode-btn" style="flex:1" title="タップした場所に配置モード">📍 タップ配置</button>
+        </div>
+        <div id="obj-presets" style="margin-top:6px"></div>
         <div id="obj-list" style="margin-top:8px"></div>
       </div>
     </div>
@@ -570,6 +607,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <span>📏 距離:</span>
     <span class="dist-badge" id="dist-badge">—</span>
     <span id="dist-txt">カメラとポートの距離を計測中...</span>
+    <span id="collision-txt" style="color:#ef4444;font-weight:700;display:none">⚠️ 接触</span>
     <span style="margin-left:auto">スケール: <span id="scale-txt">—</span></span>
     <span>OU角度: <span id="ou-ang-s">0.0°</span></span>
     <span>カメラ: <span id="cam-pos-s">—</span></span>
@@ -1056,7 +1094,7 @@ function onObjTypeChange(){
   document.getElementById('obj-size-text').style.display   = t==='text'   ? '' : 'none';
 }
 
-function addCustomObj(){
+function addCustomObj(savePreset){
   var t     = document.getElementById('obj-type').value;
   var color = document.getElementById('obj-color').value;
   var label = document.getElementById('obj-label').value.trim();
@@ -1080,6 +1118,7 @@ function addCustomObj(){
   customObjs.push(obj);
   renderObjList();
   render();
+  if(savePreset) saveObjPreset(obj);
 }
 
 function deleteCustomObj(id){
@@ -1172,6 +1211,54 @@ function drawCustomObjs(dark){
 }
 
 
+function checkCollisions(){
+  var msg = document.getElementById('collision-txt');
+  if(!msg) return;
+  var ouW=gv('ou-w'), ouD=gv('ou-d'), ouPiv=gv('ou-piv');
+  var ouA=d2r(gv('ou-ang')), ouX=gv('ou-x'), ouY=gv('ou-y');
+  // OUの四隅のworld座標
+  var corners=[
+    {x:-ouW/2, y:-ouPiv}, {x:ouW/2, y:-ouPiv},
+    {x:-ouW/2, y:-ouPiv+ouD}, {x:ouW/2, y:-ouPiv+ouD}
+  ].map(function(c){
+    var r=rot(c.x,c.y,ouA);
+    return {x:ouX+r.x, y:ouY+r.y};
+  });
+
+  var hits=[];
+
+  // 手術台との接触
+  if(corners.some(function(c){ return isInTable(c.x,c.y); })){
+    hits.push('手術台');
+  }
+
+  // オブジェクトとの接触
+  customObjs && customObjs.forEach(function(o){
+    if(o.type==='text') return;
+    var name = o.label || (o.type==='rect'?'四角形':'円');
+    var hit = corners.some(function(c){
+      var dx=c.x-o.x, dy=c.y-o.y;
+      if(o.type==='rect'){
+        var a=d2r(o.ang);
+        var lx= dx*Math.cos(a)+dy*Math.sin(a);
+        var ly=-dx*Math.sin(a)+dy*Math.cos(a);
+        return Math.abs(lx)<=o.w/2 && Math.abs(ly)<=o.h/2;
+      } else if(o.type==='circle'){
+        return Math.sqrt(dx*dx+dy*dy)<=o.r/2;
+      }
+      return false;
+    });
+    if(hit) hits.push(name);
+  });
+
+  if(hits.length){
+    msg.textContent = '⚠️ 接触: ' + hits.join(', ');
+    msg.style.display='inline';
+  } else {
+    msg.style.display='none';
+  }
+}
+
 function render(){
   // 状態をデバウンスでスタックに積む
   clearTimeout(_stateTimer);
@@ -1198,6 +1285,7 @@ function render(){
   drawPaintStrokes(dark);
   const d=dist(cam,port);
   updateStatus(d,cam);
+  checkCollisions();
   updateTiltInfo(portRaw,port);
 }
 
@@ -1705,6 +1793,13 @@ let measurePts=[];
 function toggleMeasure(){
   measureMode=!measureMode;
   measurePts=[];
+  // ピンモードボタンの表示切り替え
+  var measModeBtn = document.getElementById('smb-meas');
+  if(measModeBtn) measModeBtn.style.display = measureMode ? '' : 'none';
+  // 計測モード終了時はpanに戻す
+  if(!measureMode && typeof _mode !== 'undefined' && _mode === 'meas'){
+    spMode('pan');
+  }
   const btn=$('measure-btn');
   const row=$('measure-row');
   if(measureMode){
@@ -1767,7 +1862,9 @@ function updateStatus(d,cam){
   badge.style.color=ok?'#22c55e':warn?'#eab308':'#ef4444';
   badge.style.borderColor=badge.style.color;
   $('dist-txt').textContent=ok?'✅ 許容範囲内':warn?'⚠️ 要確認':'❌ 範囲外 – 調整が必要';
-  $('scale-txt').textContent=(1/VIEW.sc).toFixed(1)+'mm/px';
+  // スケール: 100mmが何pxか
+var _spx = Math.round(100 * VIEW.sc);
+$('scale-txt').textContent = '100mm=' + _spx + 'px';
   $('ou-ang-s').textContent=gv('ou-ang').toFixed(1)+'°';
   $('ou-ang-num').value=gv('ou-ang').toFixed(1);
   $('cam-pos-s').textContent=`(${cam.x.toFixed(0)}, ${cam.y.toFixed(0)})mm`;
@@ -2572,6 +2669,10 @@ $('help-modal').addEventListener('click',e=>{if(e.target===$('help-modal'))close
 function toggleDrawer(){
   const sb=document.querySelector('.sidebar');const ov=$('drawer-overlay');
   const isOpen=sb.classList.toggle('open');ov.classList.toggle('show',isOpen);
+  var sw=document.getElementById('sp-wrap');
+  if(sw) sw.style.display=isOpen?'none':'block';
+  var sz=document.getElementById('sp-zoom');
+  if(sz) sz.style.display=isOpen?'none':'flex';
 }
 
 // 初期化
@@ -2631,6 +2732,8 @@ cvs.addEventListener('touchstart',e=>{
       }else{clearMeasure();}
       return;
     }
+    // タップ配置モード
+    if(typeof placeObjAt === 'function' && placeObjAt(wp.x, wp.y)) return;
     touch.active=true;
     // 追加ポートのタッチ
     const ep = getExtraPortAt(wp.x, wp.y);
@@ -2720,14 +2823,31 @@ cvs.addEventListener('touchend',e=>{
   if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;touch.touchObjId=null;}
 },{passive:false});
 
+
 </script>
 
+
+  <div id="sp-zoom" style="position:fixed;top:calc(54px + env(safe-area-inset-top,0px));right:8px;display:flex;flex-direction:column;gap:4px;z-index:8001;pointer-events:auto;">
+    <button onclick="zoomStep(1.25)" style="width:44px;height:44px;background:rgba(10,10,18,0.9);border:2px solid #3a3a5c;border-radius:10px;color:#e2e8f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;">＋</button>
+    <button onclick="zoomStep(0.8)" style="width:44px;height:44px;background:rgba(10,10,18,0.9);border:2px solid #3a3a5c;border-radius:10px;color:#e2e8f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;">－</button>
+  </div>
 <div id="sp-wrap">
   <div id="sp-modebar">
     <div class="sp-mb sp-on" id="smb-pan"  onclick="spMode('pan')">🖐 スクロール</div>
     <div class="sp-mb"       id="smb-ou"   onclick="spMode('ou')">🔷 OU移動</div>
     <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🏥 台移動</div>
+    <div class="sp-mb"       id="smb-meas" onclick="spMode('meas')" style="display:none">📏 ピン</div>
     <div class="sp-mb"       id="smb-rot"  onclick="spMode('rot')">🔄 OU回転</div>
+    <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:12px;cursor:pointer;pointer-events:auto;margin-top:2px;margin-left:35px;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
+  </div>
+  <div id="sp-meas-dpad">
+    <div style="display:flex;gap:4px;margin-bottom:4px">
+      <button class="sp-mb" id="smb-pin1" onclick="spMeasPin(1)" style="font-size:10px;padding:4px 8px;pointer-events:auto">📍P1</button>
+      <button class="sp-mb" id="smb-pin2" onclick="spMeasPin(2)" style="font-size:10px;padding:4px 8px;pointer-events:auto">📍P2</button>
+    </div>
+    <div class="sp-row"><div class="sp-blank"></div><button class="sp-btn" onclick="spMeasStep('u')">↑</button><div class="sp-blank"></div></div>
+    <div class="sp-row"><button class="sp-btn" onclick="spMeasStep('l')">←</button><div class="sp-center" style="font-size:9px">微調整</div><button class="sp-btn" onclick="spMeasStep('r')">→</button></div>
+    <div class="sp-row"><div class="sp-blank"></div><button class="sp-btn" onclick="spMeasStep('d')">↓</button><div class="sp-blank"></div></div>
   </div>
   <div id="sp-dpad">
     <div class="sp-row"><div class="sp-blank"></div><div class="sp-btn" id="spBU">↑</div><div class="sp-blank"></div></div>
@@ -2778,7 +2898,7 @@ cvs.addEventListener('touchend',e=>{
   window.spMode = function(m) {
     _mode = m;
     window.spCurrentMode = m;
-    ['pan','ou','tbl','rot'].forEach(function(k){
+    ['pan','ou','tbl','rot','meas'].forEach(function(k){
       var b = document.getElementById('smb-'+k);
       if(b) b.className = 'sp-mb' + (k===m?' sp-on':'');
     });
@@ -2786,9 +2906,12 @@ cvs.addEventListener('touchend',e=>{
     var rotpad = document.getElementById('sp-rotpad');
     var info   = document.getElementById('sp-info');
     var center = document.getElementById('spBC');
-    var ctexts = {pan:'視点<br>移動',ou:'OU<br>移動',tbl:'台<br>移動',rot:'回転'};
-    var itexts = {pan:'',ou:'🔷 OUをドラッグで移動',tbl:'🏥 台をドラッグで移動',rot:'🔄 ↺↻ボタンで回転'};
-    if(dpad)  { dpad.className   = 'sp-dpad'   + (m!=='rot'?' sp-show':''); }
+    var ctexts = {pan:'視点<br>移動',ou:'OU<br>移動',tbl:'台<br>移動',rot:'回転',meas:'ピン<br>移動'};
+    var itexts = {pan:'',ou:'🔷 OUをドラッグで移動',tbl:'🏥 台をドラッグで移動',rot:'🔄 ↺↻ボタンで回転',meas:'📏 パッドで計測ピンを微調整'};
+    if(dpad)  { dpad.className   = 'sp-dpad'   + (m!=='rot'&&m!=='meas'?' sp-show':''); }
+    // meas専用dpad
+    var measdpad = document.getElementById('sp-meas-dpad');
+    if(measdpad){ measdpad.className = 'sp-dpad' + (m==='meas'?' sp-show':''); }
     if(rotpad){ rotpad.className = 'sp-rotpad' + (m==='rot'?' sp-show':''); }
     if(info)  { info.innerHTML=itexts[m]||''; info.className='sp-info'+(m!=='pan'?' sp-show':''); }
     if(center){ center.innerHTML=ctexts[m]||''; }
@@ -2805,6 +2928,10 @@ cvs.addEventListener('touchend',e=>{
       VIEW.px = VIEW.px - lx * VIEW.sc * 8;
       VIEW.py = VIEW.py + ly * VIEW.sc * 8;
       render();
+      return;
+    }
+    if(_mode==='meas'){
+      spMeasStep(dir);
       return;
     }
     if(_mode==='ou'){
@@ -3025,6 +3152,270 @@ function loadCustomInitial(){
     return true;
   } catch(e){ return false; }
 }
+
+function setAng(rangeId, numId, val, cb){
+  var r=document.getElementById(rangeId);
+  var n=document.getElementById(numId);
+  if(r) r.value=val;
+  if(n) n.value=val;
+  if(cb && window[cb]) window[cb]();
+  else render();
+}
+
+// ===== オブジェクトプリセット保存 =====
+var OBJ_PRESET_KEY = 'hinotori_obj_presets_v1';
+var objPlaceMode = false;
+
+function saveObjPreset(obj){
+  try{
+    var presets = JSON.parse(localStorage.getItem(OBJ_PRESET_KEY)||'[]');
+    var name = prompt('プリセット名を入力してください', obj.label||obj.type);
+    if(!name) return;
+    presets.push({name:name, locked:false, obj:JSON.parse(JSON.stringify(obj))});
+    localStorage.setItem(OBJ_PRESET_KEY, JSON.stringify(presets));
+    renderObjPresets();
+    alert('保存しました');
+  } catch(e){ alert('保存失敗: '+e.message); }
+}
+
+function loadObjPresets(){
+  try{
+    var presets = JSON.parse(localStorage.getItem(OBJ_PRESET_KEY)||'[]');
+    // 既存データにlockedフィールドがなければ付与
+    var updated = false;
+    presets.forEach(function(p){ if(p.locked===undefined){ p.locked=false; updated=true; } });
+    if(updated) localStorage.setItem(OBJ_PRESET_KEY, JSON.stringify(presets));
+    return presets;
+  }
+  catch(e){ return []; }
+}
+
+function deleteObjPreset(idx){
+  try{
+    var presets = JSON.parse(localStorage.getItem(OBJ_PRESET_KEY)||'[]');
+    if(presets[idx] && presets[idx].locked){ alert('ロックされています。🔒をタップしてロック解除してから削除してください'); return; }
+    var ok=true;
+    if(typeof confirm!=='undefined'){ try{ ok=confirm('削除しますか？'); }catch(e){ ok=true; } }
+    if(!ok) return;
+    presets.splice(idx,1);
+    localStorage.setItem(OBJ_PRESET_KEY, JSON.stringify(presets));
+    renderObjPresets();
+  } catch(e){}
+}
+
+function toggleObjPresetLock(idx){
+  try{
+    var presets = JSON.parse(localStorage.getItem(OBJ_PRESET_KEY)||'[]');
+    if(presets[idx]) presets[idx].locked = !presets[idx].locked;
+    localStorage.setItem(OBJ_PRESET_KEY, JSON.stringify(presets));
+    renderObjPresets();
+  } catch(e){}
+}
+
+function applyObjPreset(idx){
+  var presets = loadObjPresets();
+  var p = presets[idx]; if(!p) return;
+  var o = p.obj;
+  var s = function(id,v){ var el=document.getElementById(id); if(el) el.value=v; };
+  var sel = function(id,v){ var el=document.getElementById(id); if(el) el.value=v; };
+  sel('obj-type', o.type); onObjTypeChange();
+  s('obj-label', o.label||'');
+  s('obj-color', o.color||'#f97316');
+  s('obj-stroke-color', o.strokeColor||o.color||'#f97316');
+  s('obj-stroke-width', o.strokeWidth!==undefined?o.strokeWidth:2);
+  s('obj-opacity', o.opacity!==undefined?o.opacity:20);
+  if(o.type==='rect'){ s('obj-w',o.w||200); s('obj-h',o.h||200); }
+  else if(o.type==='circle'){ s('obj-r',o.r||200); }
+  else if(o.type==='text'){ s('obj-text',o.text||''); s('obj-font-size',o.fontSize||100); }
+  s('obj-ang', o.ang||0);
+}
+
+function renderObjPresets(){
+  var el = document.getElementById('obj-presets'); if(!el) return;
+  var presets = loadObjPresets();
+  if(!presets.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">保存済みプリセット</div>'
+    + presets.map(function(p,i){
+      var locked = p.locked || false;
+      return '<div class="obj-preset-item">'
+        + '<button class="btn btn-sm" onclick="applyObjPreset('+i+')" style="font-size:10px;padding:2px 7px;flex-shrink:0">読込</button>'
+        + '<span class="obj-preset-name" style="cursor:default">'+p.name+'</span>'
+        + '<button class="obj-preset-del" onclick="toggleObjPresetLock('+i+')" title="'+(locked?'ロック解除':'ロック')+'" style="color:'+(locked?'#f59e0b':'var(--muted)')+';">'+(locked?'🔒':'🔓')+'</button>'
+        + '<button class="obj-preset-del" onclick="deleteObjPreset('+i+')" style="'+(locked?'opacity:0.3;pointer-events:none':'')+'">✕</button>'
+        + '</div>';
+    }).join('');
+}
+
+// ===== タップ配置モード =====
+function togglePlaceMode(){
+  objPlaceMode = !objPlaceMode;
+  var btn = document.getElementById('place-mode-btn');
+  if(btn) btn.classList.toggle('active', objPlaceMode);
+}
+
+function placeObjAt(wx, wy){
+  if(!objPlaceMode) return false;
+  var el_x = document.getElementById('obj-x');
+  var el_y = document.getElementById('obj-y');
+  if(el_x) el_x.value = wx.toFixed(1);
+  if(el_y) el_y.value = wy.toFixed(1);
+  addCustomObj();
+  return true;
+}
+
+// 初期化時にプリセット読み込み
+// ページ読み込み完了後に初期化
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', function(){ renderObjPresets(); renderOUCamPresets(); });
+} else {
+  renderObjPresets(); renderOUCamPresets();
+}
+
+// ===== 計測ピン移動 =====
+var _measPinSel = 1; // 選択中のピン（1 or 2）
+
+function spMeasPin(n){
+  _measPinSel = n;
+  ['smb-pin1','smb-pin2'].forEach(function(id,i){
+    var b=document.getElementById(id);
+    if(b) b.className='sp-mb'+(i+1===n?' sp-on':'');
+  });
+}
+
+function spMeasStep(dir){
+  if(!measureMode) return;
+  var step = parseFloat((document.getElementById('kbd-step')||{value:5}).value)||5;
+  var dx=0,dy=0;
+  if(dir==='u') dy= step;
+  if(dir==='d') dy=-step;
+  if(dir==='r') dx= step;
+  if(dir==='l') dx=-step;
+  var idx = _measPinSel - 1;
+  if(!measurePts[idx]){
+    // ピンがまだなければ中心に配置
+    measurePts[idx] = {x:0, y:0};
+  }
+  measurePts[idx].x += dx;
+  measurePts[idx].y += dy;
+  // 距離更新
+  if(measurePts.length>=2){
+    var d=dist(measurePts[0],measurePts[1]);
+    var badge=document.getElementById('measure-badge');
+    if(badge){ badge.textContent=d.toFixed(1)+' mm'; badge.style.display='inline-block'; }
+    var txt=document.getElementById('measure-txt');
+    if(txt) txt.textContent='計測完了';
+  }
+  render();
+}
+
+function spToggleUI(){
+  var wrap = document.getElementById('sp-wrap');
+  var btn  = document.getElementById('smb-off');
+  if(!wrap) return;
+  var hidden = wrap.dataset.hidden === '1';
+  if(hidden){
+    // 再表示：style.displayを完全に削除してクラスに委ねる
+    wrap.dataset.hidden = '0';
+    var items = document.querySelectorAll('#sp-modebar .sp-mb:not(#smb-off):not(#smb-meas)');
+    items.forEach(function(el){ el.style.removeProperty('display'); });
+    // smb-measは計測モード時のみ表示
+    var measBtn = document.getElementById('smb-meas');
+    if(measBtn) measBtn.style.display = measureMode ? '' : 'none';
+    ['sp-dpad','sp-rotpad','sp-meas-dpad'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.removeProperty('display');
+    });
+    if(btn){ btn.textContent='✕'; btn.style.borderColor=''; btn.style.color=''; }
+  } else {
+    // 非表示（✕ボタンだけ残す）
+    wrap.dataset.hidden = '1';
+    var items = document.querySelectorAll('#sp-modebar .sp-mb:not(#smb-off)');
+    items.forEach(function(el){ el.style.display = 'none'; });
+    ['sp-dpad','sp-rotpad','sp-meas-dpad'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+    if(btn){ btn.textContent='☰'; btn.style.borderColor='#00d4ff'; btn.style.color='#00d4ff'; }
+  }
+}
+
+// ===== OU・カメラ プリセット =====
+var OU_CAM_FIELDS = ["ou-w", "ou-d", "ou-piv", "ou-ang", "ou-ang-num", "ou-x", "ou-y", "arm-sw", "arm-sw-num", "arm-x", "arm-y", "arm-bw", "arm-bh", "cam-x", "cam-y", "gl-ang", "gl-ang-num", "gl-len"];
+var OU_CAM_PRESET_KEY = 'hinotori_ou_cam_presets_v1';
+
+function loadOUCamPresets(){
+  try{ return JSON.parse(localStorage.getItem(OU_CAM_PRESET_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+
+function saveOUCamPreset(){
+  var nameEl = document.getElementById('preset-name');
+  var name = nameEl ? nameEl.value.trim() : '';
+  if(!name){ alert('プリセット名を入力してください'); return; }
+  var data = {};
+  OU_CAM_FIELDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) data[id] = el.value;
+  });
+  var presets = loadOUCamPresets();
+  presets.push({name:name, locked:false, data:data});
+  try{
+    localStorage.setItem(OU_CAM_PRESET_KEY, JSON.stringify(presets));
+    if(nameEl) nameEl.value = '';
+    renderOUCamPresets();
+    alert('「'+name+'」を保存しました');
+  } catch(e){ alert('保存失敗: '+e.message); }
+}
+
+function applyOUCamPreset(idx){
+  var presets = loadOUCamPresets();
+  var p = presets[idx]; if(!p) return;
+  var s = function(id,v){ var el=document.getElementById(id); if(el) el.value=v; };
+  OU_CAM_FIELDS.forEach(function(id){ if(p.data[id]!==undefined) s(id, p.data[id]); });
+  render();
+}
+
+function toggleOUCamPresetLock(idx){
+  var presets = loadOUCamPresets();
+  if(!presets[idx]) return;
+  presets[idx].locked = !presets[idx].locked;
+  localStorage.setItem(OU_CAM_PRESET_KEY, JSON.stringify(presets));
+  renderOUCamPresets();
+}
+
+function deleteOUCamPreset(idx){
+  var presets = loadOUCamPresets();
+  if(!presets[idx]) return;
+  if(presets[idx].locked){ alert('ロックされています。🔒をタップしてロックを解除してから削除してください'); return; }
+  var ok = true;
+  if(typeof confirm !== 'undefined'){
+    try{ ok = confirm('「'+presets[idx].name+'」を削除しますか？'); } catch(e){ ok = true; }
+  }
+  if(!ok) return;
+  presets.splice(idx,1);
+  localStorage.setItem(OU_CAM_PRESET_KEY, JSON.stringify(presets));
+  renderOUCamPresets();
+}
+
+function renderOUCamPresets(){
+  var el = document.getElementById('ou-cam-preset-list'); if(!el) return;
+  var presets = loadOUCamPresets();
+  if(!presets.length){
+    el.innerHTML = '<div style="font-size:10px;color:var(--muted)">保存済みプリセットなし</div>';
+    return;
+  }
+  el.innerHTML = presets.map(function(p,i){
+    var locked = p.locked;
+    return '<div class="preset-item'+(locked?' locked':'')+'">'
+      + '<button class="btn btn-sm" onclick="applyOUCamPreset('+i+')" style="font-size:10px;padding:2px 7px;flex-shrink:0">読込</button>'
+      + '<span class="preset-item-name" style="cursor:default">'+p.name+'</span>'
+      + '<button class="preset-lock-btn" onclick="toggleOUCamPresetLock('+i+')" title="'+(locked?'ロック解除':'ロック')+'">'+(locked?'🔒':'🔓')+'</button>'
+      + '<button class="preset-del-btn" onclick="deleteOUCamPreset('+i+')" title="削除" style="'+(locked?'opacity:0.3;pointer-events:none':'')+'">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+
 function resetToInitial(){
   // カスタム初期設定があればそちらを使用
   if(loadCustomInitial()){ render(); return; }
