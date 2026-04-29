@@ -49,7 +49,7 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 16
 .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:98999}
 .drawer-overlay.show{display:block}
 /* PC幅でもdrawer表示のため削除 */
-.drawer-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0}
+.drawer-toggle{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--text);font-size:20px;cursor:pointer;flex-shrink:0}
 .canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);min-width:0;min-height:0;}
 canvas{display:block;cursor:grab}
 canvas.grab{cursor:grabbing}
@@ -562,6 +562,10 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
         <div class="row">
           <div class="f"><label>枠線幅 (px)</label><input type="number" id="obj-stroke-width" value="2" min="0" max="20"></div>
           <div class="f"><label>塗り透明度 (%)</label><input type="number" id="obj-opacity" value="20" min="0" max="100"></div>
+          <div class="f" style="align-items:center;gap:6px;flex-direction:row">
+            <input type="checkbox" id="obj-fill-none" onchange="onObjFillNone()" style="width:16px;height:16px;flex-shrink:0">
+            <label for="obj-fill-none" style="margin:0;cursor:pointer">枠のみ（塗りなし）</label>
+          </div>
         </div>
         <div class="row">
           <div class="f"><label>X位置 (mm)</label><input type="number" id="obj-x" value="0"></div>
@@ -1085,6 +1089,7 @@ function undoState(){
 
 // ===== オブジェクト配置 =====
 var customObjs = [];
+var _selectedObjId = null; // パッドで移動するオブジェクトID
 var nextObjId = 1;
 
 function onObjTypeChange(){
@@ -1144,14 +1149,31 @@ function getCustomObjAt(wx, wy){
     var o=customObjs[i];
     var dx=wx-o.x, dy=wy-o.y;
     var hit=false;
+    var fillNone = (o.opacity===0 || o.opacity==='0');
+    var margin = 20; // タッチ余白
     if(o.type==='rect'){
-      // 回転考慮
       var a=d2r(o.ang);
       var lx= dx*Math.cos(a)+dy*Math.sin(a);
       var ly=-dx*Math.sin(a)+dy*Math.cos(a);
-      hit=Math.abs(lx)<=o.w/2+30 && Math.abs(ly)<=o.h/2+30;
+      var inOuter = Math.abs(lx)<=o.w/2+margin && Math.abs(ly)<=o.h/2+margin;
+      if(fillNone){
+        // 枠のみ：外側判定OKかつ内側判定NG（枠付近のみ）
+        var sw = (o.strokeWidth||2) + margin;
+        var inInner = Math.abs(lx)<=o.w/2-sw && Math.abs(ly)<=o.h/2-sw;
+        hit = inOuter && !inInner;
+      } else {
+        hit = inOuter;
+      }
     } else if(o.type==='circle'){
-      hit=Math.sqrt(dx*dx+dy*dy)<=o.r/2+30;
+      var dist = Math.sqrt(dx*dx+dy*dy);
+      var outer = o.r/2+margin;
+      if(fillNone){
+        var sw2 = (o.strokeWidth||2) + margin;
+        var inner = o.r/2-sw2;
+        hit = dist<=outer && dist>=Math.max(0,inner);
+      } else {
+        hit = dist<=outer;
+      }
     } else if(o.type==='text'){
       hit=Math.abs(dx)<=o.fontSize*2 && Math.abs(dy)<=o.fontSize;
     }
@@ -1164,9 +1186,11 @@ function drawCustomObjs(dark){
   if(!customObjs) return;
   customObjs.forEach(function(o){
     var c = w2c(o.x, o.y);
+    var isSelected = o.id === _selectedObjId;
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.rotate(-d2r(o.ang));
+    if(isSelected){ ctx.shadowColor='#00d4ff'; ctx.shadowBlur=10; }
     var sc = o.strokeColor || o.color;
     var sw = (o.strokeWidth !== undefined) ? o.strokeWidth : 2;
     var op = (o.opacity !== undefined) ? o.opacity : 20;
@@ -1206,6 +1230,7 @@ function drawCustomObjs(dark){
       ctx.fillText(o.text,0,0);
     }
     ctx.globalAlpha=1;
+    ctx.shadowBlur=0;
     ctx.restore();
   });
 }
@@ -1244,7 +1269,10 @@ function checkCollisions(){
         var ly=-dx*Math.sin(a)+dy*Math.cos(a);
         return Math.abs(lx)<=o.w/2 && Math.abs(ly)<=o.h/2;
       } else if(o.type==='circle'){
-        return Math.sqrt(dx*dx+dy*dy)<=o.r/2;
+        var fillNone2=(o.opacity===0||o.opacity==='0');
+        var d2=Math.sqrt(dx*dx+dy*dy);
+        if(fillNone2){ var sw3=(o.strokeWidth||2); return d2>=o.r/2-sw3 && d2<=o.r/2+sw3; }
+        return d2<=o.r/2;
       }
       return false;
     });
@@ -2744,6 +2772,7 @@ cvs.addEventListener('touchstart',e=>{
     } else if(co && (window.spCurrentMode||'pan')==='pan'){
       touch.mode='custom-obj';touch.touchObjId=co.id;
       touch.oCustomObjX=co.x;touch.oCustomObjY=co.y;
+      _selectedObjId=co.id; // パッド移動用に選択
     } else {
       var cm = window.spCurrentMode || 'pan';
       if(cm === 'pan'){
@@ -2819,6 +2848,10 @@ cvs.addEventListener('touchend',e=>{
   }
   if(touch.mode==='extra-port')renderPortList();
   if(touch.mode==='custom-obj')renderObjList();
+  // オブジェクト以外タップで選択解除
+  if(touch.mode!=='custom-obj' && touch.moved===false){
+    _selectedObjId=null; render();
+  }
   // 選択判定はスマホでは無効
   if(e.touches.length===0){touch.active=false;touch.mode='';touch.touchPortId=null;touch.touchObjId=null;}
 },{passive:false});
@@ -2838,7 +2871,7 @@ cvs.addEventListener('touchend',e=>{
     <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🏥 台移動</div>
     <div class="sp-mb"       id="smb-meas" onclick="spMode('meas')" style="display:none">📏 ピン</div>
     <div class="sp-mb"       id="smb-rot"  onclick="spMode('rot')">🔄 OU回転</div>
-    <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:12px;cursor:pointer;pointer-events:auto;margin-top:2px;margin-left:35px;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
+    <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:20px;cursor:pointer;pointer-events:auto;margin-top:2px;margin-left:35px;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
   </div>
   <div id="sp-meas-dpad">
     <div style="display:flex;gap:4px;margin-bottom:4px">
@@ -2925,6 +2958,11 @@ cvs.addEventListener('touchend',e=>{
     if(dir==='u')ly=step; else if(dir==='d')ly=-step;
     else if(dir==='r')lx=step; else if(dir==='l')lx=-step;
     if(_mode==='pan'){
+      // 選択済みオブジェクトがあればそちらを移動
+      if(_selectedObjId!==null){
+        var _co=customObjs.find(function(o){return o.id===_selectedObjId;});
+        if(_co){ _co.x+=lx; _co.y+=ly; render(); return; }
+      }
       VIEW.px = VIEW.px - lx * VIEW.sc * 8;
       VIEW.py = VIEW.py + ly * VIEW.sc * 8;
       render();
@@ -3416,6 +3454,19 @@ function renderOUCamPresets(){
 }
 
 
+
+function onObjFillNone(){
+  var cb = document.getElementById('obj-fill-none');
+  var op = document.getElementById('obj-opacity');
+  if(!cb || !op) return;
+  if(cb.checked){
+    op.value = 0;
+    op.disabled = true;
+  } else {
+    op.value = 20;
+    op.disabled = false;
+  }
+}
 function resetToInitial(){
   // カスタム初期設定があればそちらを使用
   if(loadCustomInitial()){ render(); return; }
