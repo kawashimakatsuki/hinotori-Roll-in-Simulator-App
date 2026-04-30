@@ -143,7 +143,7 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:8px 0}
   display:none;
   pointer-events:auto;
 }
-#sp-rotpad.sp-show { display:block; }
+#sp-rotpad.sp-show { display:none!important; }
 .sp-rot-btn:active { background:rgba(167,139,250,0.3) !important; border-color:#a78bfa !important; }
 
 /* 画面全体を確実に収める */
@@ -2929,20 +2929,20 @@ cvs.addEventListener('touchend',e=>{
     <!-- row1: [左回転] [↑] [右回転] -->
     <div class="sp-row">
       <div class="sp-corner" id="spCornerTL"></div>
-      <div class="sp-btn" id="spBU">↑</div>
+      <div class="sp-btn" id="spBU" style="width:36px;height:36px;font-size:16px;">↑</div>
       <div class="sp-corner" id="spCornerTR"></div>
     </div>
     <!-- row2: [←] [中央] [→] -->
     <div class="sp-row">
-      <div class="sp-btn" id="spBL">←</div>
-      <div class="sp-center" id="spBC">移動</div>
-      <div class="sp-btn" id="spBR">→</div>
+      <div class="sp-btn" id="spBL" style="width:36px;height:36px;font-size:16px;">←</div>
+      <div class="sp-center" id="spBC" style="width:36px;height:36px;font-size:9px;"></div>
+      <div class="sp-btn" id="spBR" style="width:36px;height:36px;font-size:16px;">→</div>
     </div>
-    <!-- row3: [左回転] [↓] [右回転] -->
+    <!-- row3: [0.5°] [↓] [5°] -->
     <div class="sp-row">
-      <div class="sp-corner" id="spCornerBL"></div>
-      <div class="sp-btn" id="spBD">↓</div>
-      <div class="sp-corner" id="spCornerBR"></div>
+      <div class="sp-corner" id="spCornerBL" style="font-size:10px;"></div>
+      <div class="sp-btn" id="spBD" style="width:36px;height:36px;font-size:16px;">↓</div>
+      <div class="sp-corner" id="spCornerBR" style="font-size:10px;"></div>
     </div>
   </div>
   <!-- 回転UI（rot モード用） -->
@@ -2971,7 +2971,7 @@ cvs.addEventListener('touchend',e=>{
 
 </div>
 <div id="sp-info"></div>
-  <div id="sp-step-ctrl" style="position:absolute;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:18px;display:none;flex-direction:row;gap:3px;pointer-events:auto;align-items:center;">
+  <div id="sp-step-ctrl" style="position:absolute;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:18px;display:none!important;flex-direction:row;gap:3px;pointer-events:auto;align-items:center;">
     <div id="sp-step-label" style="color:#e2e8f0;font-size:9px;margin-right:2px;"></div>
     <div class="sp-btn" id="spStepSlow" onclick="spSetStepFromCtrl(0.5)" style="width:52px;height:28px;font-size:9px;white-space:nowrap;">0.5°</div>
     <div class="sp-btn" id="spStep1"    onclick="spSetStepFromCtrl(1)"   style="width:36px;height:28px;font-size:9px;">1°</div>
@@ -3019,7 +3019,7 @@ cvs.addEventListener('touchend',e=>{
     if(center){ center.innerHTML=ctexts[m]||''; }
     if(m==='ou') spUpdateRotAngle();
     if(typeof updateDpadCorners !== 'undefined') updateDpadCorners(m);
-    if(typeof showStepCtrl !== 'undefined') showStepCtrl(m);
+    // step ctrl now in dpad corners
     if(m==='tbl'){
       var ae2=document.getElementById('tbl-ang'), disp2=document.getElementById('sp-trot-angle');
       if(ae2&&disp2) disp2.textContent=parseFloat(ae2.value||0).toFixed(1)+'°';
@@ -3108,6 +3108,7 @@ cvs.addEventListener('touchend',e=>{
   }
   
   function spRotate(delta) {
+    window.spRotate = spRotate;
     var ae = document.getElementById('ou-ang');
     var an = document.getElementById('ou-ang-num');
     if(!ae) return;
@@ -3607,28 +3608,23 @@ function updateDpadCorners(m){
   var bl = document.getElementById('spCornerBL');
   var br = document.getElementById('spCornerBR');
   if(!tl) return;
-  if(m==='ou'){
-    // OU回転：左上・左下=左回転、右上・右下=右回転
-    [tl,bl].forEach(function(el){
-      el.textContent='↺'; el.className='sp-corner rot-ou';
-      el.onclick=function(){ spRotate(window._rotStep||1); };
-    });
-    [tr,br].forEach(function(el){
-      el.textContent='↻'; el.className='sp-corner rot-ou';
-      el.onclick=function(){ spRotate(-(window._rotStep||1)); };
-    });
-  } else if(m==='tbl'){
-    // 台回転
-    [tl,bl].forEach(function(el){
-      el.textContent='↺'; el.className='sp-corner rot-tbl';
-      el.onclick=function(){ spTblRotate(window._tblRotStep||1); };
-    });
-    [tr,br].forEach(function(el){
-      el.textContent='↻'; el.className='sp-corner rot-tbl';
-      el.onclick=function(){ spTblRotate(-(window._tblRotStep||1)); };
-    });
+  if(m==='ou'||m==='tbl'){
+    var rotFn = m==='ou'
+      ? function(d){ if(window.spRotate) window.spRotate(d*(window._rotStep||1)); }
+      : function(d){ spTblRotate(d*(window._tblRotStep||1)); };
+    var color = m==='ou'?'rot-ou':'rot-tbl';
+    // 上段：左回転・右回転
+    tl.textContent='↺'; tl.className='sp-corner '+color;
+    tl.onclick=function(){ rotFn(1); };
+    tr.textContent='↻'; tr.className='sp-corner '+color;
+    tr.onclick=function(){ rotFn(-1); };
+    // 下段：回転幅ボタン
+    var curStep = m==='ou'?(window._rotStep||1):(typeof _tblRotStep!=='undefined'?_tblRotStep:1);
+    bl.textContent='0.5°'; bl.className='sp-corner '+(curStep===0.5?color:'');
+    bl.onclick=function(){ spSetStepFromCtrl(0.5); updateDpadCorners(m); };
+    br.textContent='5°'; br.className='sp-corner '+(curStep===5?color:'');
+    br.onclick=function(){ spSetStepFromCtrl(5); updateDpadCorners(m); };
   } else {
-    // pan/meas: コーナー非表示
     [tl,tr,bl,br].forEach(function(el){
       el.textContent=''; el.className='sp-corner hidden'; el.onclick=null;
     });
@@ -3638,21 +3634,15 @@ function updateDpadCorners(m){
 function spSetStepFromCtrl(s){
   var m = window.spCurrentMode || 'pan';
   if(m==='ou'){
+    s = (_ouRotStep===s && s!==1) ? 1 : s;
     _ouRotStep=s; window._rotStep=s;
-    updateRotStepUI('ou',s);
   } else if(m==='tbl'){
+    s = (_tblRotStep===s && s!==1) ? 1 : s;
     _tblRotStep=s;
-    updateRotStepUI('tbl',s);
   }
-  // ステップCTRLのUIも更新
-  ['spStepSlow','spStep1','spStepFast'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el) return;
-    var v=id==='spStepSlow'?0.5:id==='spStep1'?1:5;
-    var color = m==='ou'?'#a78bfa':'#60a5fa';
-    el.style.borderColor = v===s ? color : '';
-    el.style.color       = v===s ? color : '';
-  });
+  updateDpadCorners(m);
+
+  if(typeof updateDpadCorners!=='undefined') updateDpadCorners(m);
 }
 
 function showStepCtrl(m){
