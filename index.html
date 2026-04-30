@@ -3108,7 +3108,6 @@ cvs.addEventListener('touchend',e=>{
   }
   
   function spRotate(delta) {
-    window.spRotate = spRotate;
     var ae = document.getElementById('ou-ang');
     var an = document.getElementById('ou-ang-num');
     if(!ae) return;
@@ -3118,6 +3117,7 @@ cvs.addEventListener('touchend',e=>{
     spUpdateRotAngle();
     spUpdateRotAngle();
   }
+  window.spRotate = spRotate;
   
   function bindStepBtn(id, isFast) {
     var el = document.getElementById(id);
