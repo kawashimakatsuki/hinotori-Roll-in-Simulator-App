@@ -134,11 +134,12 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:8px 0}
 
 /* === スマホUI追加 === */
 
-#sp-trotpad { position:absolute; bottom:calc(290px + env(safe-area-inset-bottom, 0px)); right:8px; display:none; flex-direction:column; align-items:center; gap:3px; pointer-events:auto; }
+#sp-trotpad { position:absolute; bottom:calc(70px + env(safe-area-inset-bottom, 0px)); right:175px; display:none; flex-direction:column; align-items:center; gap:3px; pointer-events:auto; }
 #sp-trotpad.sp-show { display:flex; }
 #sp-rotpad {
   position:absolute;
-  bottom:calc(290px + env(safe-area-inset-bottom, 0px));right:8px;
+  bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+  right:175px;
   display:none;
   pointer-events:auto;
 }
@@ -176,7 +177,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 }
 #sp-wrap{
   position:fixed;bottom:0;left:0;right:0;
-  height:180px;
+  height:160px;
   pointer-events:none;
   z-index:8000;
   padding-left:env(safe-area-inset-left, 0px);
@@ -190,7 +191,8 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
   #sp-modebar{ bottom:8px; left:110px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
   .sp-mb{ padding:5px 8px; font-size:10px; }
   #sp-dpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
-  #sp-rotpad{ bottom:190px; right:calc(8px + env(safe-area-inset-right, 0px)); }
+  #sp-rotpad{ bottom:8px; right:calc(180px + env(safe-area-inset-right, 0px)); }
+  #sp-trotpad{ bottom:8px; right:calc(180px + env(safe-area-inset-right, 0px)); }
   .sp-btn{ width:44px; height:44px; font-size:20px; }
   .sp-blank{ width:44px; height:44px; }
   .sp-center{ width:44px; height:44px; font-size:9px; }
@@ -203,7 +205,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 }
 #sp-modebar{
   position:absolute;
-  bottom:calc(90px + env(safe-area-inset-bottom, 0px));
+  bottom:calc(70px + env(safe-area-inset-bottom, 0px));
   left:18px;
   display:flex;flex-direction:column;gap:4px;
   pointer-events:auto;
@@ -223,13 +225,13 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 .sp-mb.sp-on{border-color:#00d4ff;color:#00d4ff;background:rgba(0,212,255,0.15);}
 #sp-dpad{
   position:absolute;
-  bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:18px;
+  bottom:calc(70px + env(safe-area-inset-bottom, 0px));right:18px;
   display:none;
   flex-direction:column;align-items:center;gap:3px;
   pointer-events:auto;
 }
 #sp-dpad.sp-show{display:flex;}
-#sp-meas-dpad{position:absolute;bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:8px;display:none;flex-direction:column;align-items:center;gap:3px;pointer-events:auto;}
+#sp-meas-dpad{position:absolute;bottom:calc(70px + env(safe-area-inset-bottom, 0px));right:8px;display:none;flex-direction:column;align-items:center;gap:3px;pointer-events:auto;}
 #sp-meas-dpad.sp-show{display:flex;}
 .sp-row{display:flex;gap:3px;}
 .sp-btn{
@@ -2876,21 +2878,21 @@ cvs.addEventListener('touchend',e=>{
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
       <div style="color:#60a5fa;font-size:10px;font-weight:700;margin-bottom:2px;">台回転</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <div class="sp-btn sp-rot-btn" id="spTRL" onclick="spTblRotate(+_rotStep)" style="width:64px;height:64px;font-size:22px;border-color:#60a5fa;flex-direction:column;gap:2px;">
+        <div class="sp-btn sp-rot-btn" id="spTRL" onclick="spTblRotate(+_rotStep)" style="width:54px;height:54px;font-size:18px;border-color:#60a5fa;flex-direction:column;gap:1px;">
           <span>↺</span><span style="font-size:9px;color:#60a5fa;">左回転</span>
         </div>
-        <div style="width:56px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+        <div style="width:46px;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
           <div id="sp-trot-angle" style="color:#60a5fa;font-size:14px;font-weight:700;min-width:48px;text-align:center;">0°</div>
           <div style="color:#5a6480;font-size:9px;">角度</div>
         </div>
-        <div class="sp-btn sp-rot-btn" id="spTRR" onclick="spTblRotate(-_rotStep)" style="width:64px;height:64px;font-size:22px;border-color:#60a5fa;flex-direction:column;gap:2px;">
+        <div class="sp-btn sp-rot-btn" id="spTRR" onclick="spTblRotate(-_rotStep)" style="width:54px;height:54px;font-size:18px;border-color:#60a5fa;flex-direction:column;gap:1px;">
           <span>↻</span><span style="font-size:9px;color:#60a5fa;">右回転</span>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <div class="sp-btn" id="spTRSlow" onclick="spToggleStep('tbl','slow')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
-        <div class="sp-btn" id="spTRMid"  onclick="spToggleStep('tbl','mid')"  style="width:42px;height:36px;font-size:9px;border-color:#60a5fa;color:#60a5fa;">1°</div>
-        <div class="sp-btn" id="spTRFast" onclick="spToggleStep('tbl','fast')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">大回転 5°</div>
+        <div class="sp-btn" id="spTRSlow" onclick="spToggleStep('tbl','slow')" style="width:64px;height:32px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
+        <div class="sp-btn" id="spTRMid"  onclick="spToggleStep('tbl','mid')"  style="width:36px;height:32px;font-size:9px;border-color:#60a5fa;color:#60a5fa;">1°</div>
+        <div class="sp-btn" id="spTRFast" onclick="spToggleStep('tbl','fast')" style="width:64px;height:32px;font-size:9px;white-space:nowrap;">大回転 5°</div>
       </div>
     </div>
   </div>
@@ -2913,21 +2915,21 @@ cvs.addEventListener('touchend',e=>{
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
       <div style="color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:2px;">OU回転</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <div class="sp-btn sp-rot-btn" id="spRL" style="width:64px;height:64px;font-size:22px;border-color:#a78bfa;flex-direction:column;gap:2px;">
+        <div class="sp-btn sp-rot-btn" id="spRL" style="width:54px;height:54px;font-size:18px;border-color:#a78bfa;flex-direction:column;gap:1px;">
           <span>↺</span><span style="font-size:9px;color:#a78bfa;">左回転</span>
         </div>
-        <div style="width:56px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
-          <div id="sp-rot-angle" style="color:#a78bfa;font-size:14px;font-weight:700;min-width:48px;text-align:center;">0°</div>
+        <div style="width:46px;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+          <div id="sp-rot-angle" style="color:#a78bfa;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0°</div>
           <div style="color:#5a6480;font-size:9px;">角度</div>
         </div>
-        <div class="sp-btn sp-rot-btn" id="spRR" style="width:64px;height:64px;font-size:22px;border-color:#a78bfa;flex-direction:column;gap:2px;">
+        <div class="sp-btn sp-rot-btn" id="spRR" style="width:54px;height:54px;font-size:18px;border-color:#a78bfa;flex-direction:column;gap:1px;">
           <span>↻</span><span style="font-size:9px;color:#a78bfa;">右回転</span>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <div class="sp-btn" id="spRSlow" onclick="spToggleStep('ou','slow')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
-        <div class="sp-btn" id="spRMid"  onclick="spToggleStep('ou','mid')"  style="width:42px;height:36px;font-size:9px;border-color:#a78bfa;color:#a78bfa;">1°</div>
-        <div class="sp-btn" id="spRFast" onclick="spToggleStep('ou','fast')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">大回転 5°</div>
+        <div class="sp-btn" id="spRSlow" onclick="spToggleStep('ou','slow')" style="width:64px;height:32px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
+        <div class="sp-btn" id="spRMid"  onclick="spToggleStep('ou','mid')"  style="width:36px;height:32px;font-size:9px;border-color:#a78bfa;color:#a78bfa;">1°</div>
+        <div class="sp-btn" id="spRFast" onclick="spToggleStep('ou','fast')" style="width:64px;height:32px;font-size:9px;white-space:nowrap;">大回転 5°</div>
       </div>
     </div>
   </div>
