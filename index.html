@@ -176,7 +176,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
   .main { overflow: hidden; }
 }
 #sp-wrap{
-  position:fixed;bottom:0;left:0;right:0;
+  position:fixed;bottom:70px;left:0;right:0;
   height:160px;
   pointer-events:none;
   z-index:8000;
@@ -205,7 +205,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 }
 #sp-modebar{
   position:absolute;
-  bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+  bottom:calc(46px + env(safe-area-inset-bottom, 0px));
   left:18px;
   display:flex;flex-direction:column;gap:4px;
   pointer-events:auto;
@@ -387,7 +387,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     </div>
 
     <div class="sec">
-      <div class="sec-hd" onclick="toggleSec(this)"><span>📷 ポジショニングカメラ</span><span class="arr">▶</span></div>
+      <div class="sec-hd" onclick="toggleSec(this)"><span>📷 アームベース</span><span class="arr">▶</span></div>
       <div class="sec-bd">
         <div class="f"><label>アームベース旋回角度 (°)</label>
           <div class="slider-row">
@@ -407,8 +407,8 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
           <div class="f"><label>アームベース 長さ (mm)</label><input type="number" id="arm-bh" value="1000" min="100" max="1000" oninput="render()"></div>
         </div>
         <div class="row">
-          <div class="f"><label>カメラ Xオフセット (mm)</label><input type="number" id="cam-x" value="0" oninput="render()"></div>
-          <div class="f"><label>カメラ Yオフセット (mm)</label><input type="number" id="cam-y" value="0" oninput="render()"></div>
+          <div class="f"><label>ポジショニングカメラ Xオフセット (mm)</label><input type="number" id="cam-x" value="0" oninput="render()"></div>
+          <div class="f"><label>ポジショニングカメラ Yオフセット (mm)</label><input type="number" id="cam-y" value="0" oninput="render()"></div>
         </div>
         <hr class="sep">
         <div class="f"><label><input type="checkbox" id="show-guide" checked onchange="render()"> ガイド線を表示</label></div>
@@ -629,6 +629,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <canvas id="c"></canvas>
   </div>
 </div>
+
 
 <div class="status">
   <div class="status-row">
@@ -2669,8 +2670,8 @@ const DEFAULT_FIELDS = [
   {id:'arm-y',      label:'アームベース Y',   unit:'mm'},
   {id:'arm-bw',     label:'アームベース 幅',  unit:'mm'},
   {id:'arm-bh',     label:'アームベース 長さ', unit:'mm'},
-  {id:'cam-x',      label:'カメラ Xオフセット', unit:'mm'},
-  {id:'cam-y',      label:'カメラ Yオフセット', unit:'mm'},
+  {id:'cam-x',      label:'ポジショニングカメラ Xオフセット', unit:'mm'},
+  {id:'cam-y',      label:'ポジショニングカメラ Yオフセット', unit:'mm'},
   {id:'gl-ang',     label:'ガイド線 角度オフセット', unit:'°'},
   {id:'gl-len',     label:'ガイド線 長さ',    unit:'mm'},
   {id:'tbl-w',      label:'手術台 幅',        unit:'mm'},
@@ -2886,13 +2887,19 @@ cvs.addEventListener('touchend',e=>{
     <button onclick="zoomStep(1.25)" style="width:44px;height:44px;background:rgba(10,10,18,0.9);border:2px solid #3a3a5c;border-radius:10px;color:#e2e8f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;">＋</button>
     <button onclick="zoomStep(0.8)" style="width:44px;height:44px;background:rgba(10,10,18,0.9);border:2px solid #3a3a5c;border-radius:10px;color:#e2e8f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;">－</button>
   </div>
+
 <div id="sp-wrap">
   <div id="sp-modebar">
     <div class="sp-mb sp-on" id="smb-pan"  onclick="spMode('pan')">🖐 スクロール</div>
     <div class="sp-mb"       id="smb-ou"   onclick="spMode('ou')"><img src="data:image/png;base64,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" style="width:18px;height:18px;vertical-align:middle;border-radius:3px;margin-right:2px;">OU</div>
     <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🛏️ 手術台</div>
     <div class="sp-mb"       id="smb-meas" onclick="spMode('meas')" style="display:none">📏 ピン</div>
-    <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:20px;cursor:pointer;pointer-events:auto;margin-top:2px;margin-left:35px;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
+  </div>
+  <!-- 📷と✕: モードバーの下に独立配置 -->
+  <div style="position:absolute;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:33px;display:flex;flex-direction:row;align-items:center;gap:6px;pointer-events:auto;">
+    <button id="ss-toggle-btn" onclick="toggleScreenshotMode()" title="スクリーンショットモード" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:16px;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;user-select:none;">🫣</button>
+    <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:20px;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
+  </div>
   </div>
   <div id="sp-trotpad" class="sp-rotpad">
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
@@ -2971,12 +2978,6 @@ cvs.addEventListener('touchend',e=>{
 
 </div>
 <div id="sp-info"></div>
-  <div id="sp-step-ctrl" style="position:absolute;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:18px;display:none!important;flex-direction:row;gap:3px;pointer-events:auto;align-items:center;">
-    <div id="sp-step-label" style="color:#e2e8f0;font-size:9px;margin-right:2px;"></div>
-    <div class="sp-btn" id="spStepSlow" onclick="spSetStepFromCtrl(0.5)" style="width:52px;height:28px;font-size:9px;white-space:nowrap;">0.5°</div>
-    <div class="sp-btn" id="spStep1"    onclick="spSetStepFromCtrl(1)"   style="width:36px;height:28px;font-size:9px;">1°</div>
-    <div class="sp-btn" id="spStepFast" onclick="spSetStepFromCtrl(5)"   style="width:52px;height:28px;font-size:9px;white-space:nowrap;">5°</div>
-  </div>
 
 
 <script>
@@ -3019,7 +3020,7 @@ cvs.addEventListener('touchend',e=>{
     if(center){ center.innerHTML=ctexts[m]||''; }
     if(m==='ou') spUpdateRotAngle();
     if(typeof updateDpadCorners !== 'undefined') updateDpadCorners(m);
-    // step ctrl now in dpad corners
+    
     if(m==='tbl'){
       var ae2=document.getElementById('tbl-ang'), disp2=document.getElementById('sp-trot-angle');
       if(ae2&&disp2) disp2.textContent=parseFloat(ae2.value||0).toFixed(1)+'°';
@@ -3437,6 +3438,8 @@ function spToggleUI(){
     wrap.dataset.hidden = '0';
     var items = document.querySelectorAll('#sp-modebar .sp-mb:not(#smb-off):not(#smb-meas)');
     items.forEach(function(el){ el.style.removeProperty('display'); });
+    var ssBtn = document.getElementById('ss-toggle-btn');
+    if(ssBtn) ssBtn.style.removeProperty('display');
     // smb-measは計測モード時のみ表示
     var measBtn = document.getElementById('smb-meas');
     if(measBtn) measBtn.style.display = measureMode ? '' : 'none';
@@ -3450,6 +3453,8 @@ function spToggleUI(){
     wrap.dataset.hidden = '1';
     var items = document.querySelectorAll('#sp-modebar .sp-mb:not(#smb-off)');
     items.forEach(function(el){ el.style.display = 'none'; });
+    var ssBtn2 = document.getElementById('ss-toggle-btn');
+    if(ssBtn2) ssBtn2.style.display = 'none';
     ['sp-dpad','sp-rotpad','sp-meas-dpad'].forEach(function(id){
       var el = document.getElementById(id);
       if(el) el.style.display = 'none';
@@ -3658,6 +3663,41 @@ function showStepCtrl(m){
     el.style.display='none';
   }
 }
+
+// ===== スクリーンショットモード =====
+var _ssMode = false;
+
+function toggleScreenshotMode(){
+  _ssMode = !_ssMode;
+  var btn = document.getElementById('ss-toggle-btn');
+  var header = document.querySelector('header');
+  var spZoom = document.getElementById('sp-zoom');
+  var hideIds = ['sp-dpad','sp-rotpad','sp-trotpad','sp-meas-dpad','sp-info'];
+
+  if(_ssMode){
+    if(header) header.style.display='none';
+    hideIds.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.setProperty('display','none','important'); });
+    // モードバーのボタンを非表示（📷とsmb-offは除く）
+    document.querySelectorAll('#sp-modebar .sp-mb, #sp-modebar button:not(#ss-toggle-btn)').forEach(function(el){ el.style.display='none'; });
+    if(spZoom) spZoom.style.display='none';
+    if(btn){ btn.textContent='👁'; btn.style.borderColor='#00d4ff'; btn.style.color='#00d4ff'; }
+    var cvs=document.getElementById('c');
+    if(cvs&&cvs.parentElement) cvs.parentElement.style.top='0';
+  } else {
+    if(header) header.style.removeProperty('display');
+    hideIds.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.removeProperty('display'); });
+    // モードバーのボタンを再表示
+    document.querySelectorAll('#sp-modebar .sp-mb, #sp-modebar button:not(#ss-toggle-btn)').forEach(function(el){ el.style.removeProperty('display'); });
+    // smb-measは計測モード時のみ表示
+    var measBtn2 = document.getElementById('smb-meas');
+    if(measBtn2) measBtn2.style.display = (typeof measureMode!=='undefined'&&measureMode) ? '' : 'none';
+    if(spZoom) spZoom.style.display='flex';
+    if(btn){ btn.textContent='🫣'; btn.style.borderColor=''; btn.style.color=''; }
+    var cvs=document.getElementById('c');
+    if(cvs&&cvs.parentElement) cvs.parentElement.style.removeProperty('top');
+  }
+  setTimeout(function(){ if(typeof resize==='function') resize(); }, 50);
+}
 function resetToInitial(){
   // カスタム初期設定があればそちらを使用
   if(loadCustomInitial()){ render(); return; }
@@ -3670,7 +3710,7 @@ function resetToInitial(){
   s('ou-ang', 45);   s('ou-ang-num', 45);
   s('ou-x',   1103);
   s('ou-y',   -1886);
-  // ポジショニングカメラ
+  // アームベース
   s('arm-sw',     0); s('arm-sw-num', 0);
   s('arm-x',    550);
   s('arm-y',   1200);
