@@ -134,9 +134,11 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:8px 0}
 
 /* === スマホUI追加 === */
 
+#sp-trotpad { position:absolute; bottom:calc(290px + env(safe-area-inset-bottom, 0px)); right:8px; display:none; flex-direction:column; align-items:center; gap:3px; pointer-events:auto; }
+#sp-trotpad.sp-show { display:flex; }
 #sp-rotpad {
   position:absolute;
-  bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:8px;
+  bottom:calc(290px + env(safe-area-inset-bottom, 0px));right:8px;
   display:none;
   pointer-events:auto;
 }
@@ -185,10 +187,10 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 /* 横向き対応 */
 @media(orientation:landscape) and (max-height:500px){
   #sp-wrap{ height:90px; }
-  #sp-modebar{ bottom:8px; left:100px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
+  #sp-modebar{ bottom:8px; left:110px; flex-direction:row; flex-wrap:wrap; gap:4px; max-width:50vw; }
   .sp-mb{ padding:5px 8px; font-size:10px; }
   #sp-dpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
-  #sp-rotpad{ bottom:8px; right:calc(8px + env(safe-area-inset-right, 0px)); }
+  #sp-rotpad{ bottom:190px; right:calc(8px + env(safe-area-inset-right, 0px)); }
   .sp-btn{ width:44px; height:44px; font-size:20px; }
   .sp-blank{ width:44px; height:44px; }
   .sp-center{ width:44px; height:44px; font-size:9px; }
@@ -202,7 +204,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 #sp-modebar{
   position:absolute;
   bottom:calc(90px + env(safe-area-inset-bottom, 0px));
-  left:8px;
+  left:18px;
   display:flex;flex-direction:column;gap:4px;
   pointer-events:auto;
   z-index:8001;
@@ -221,7 +223,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 .sp-mb.sp-on{border-color:#00d4ff;color:#00d4ff;background:rgba(0,212,255,0.15);}
 #sp-dpad{
   position:absolute;
-  bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:8px;
+  bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:18px;
   display:none;
   flex-direction:column;align-items:center;gap:3px;
   pointer-events:auto;
@@ -329,7 +331,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
   <div class="sidebar-scroll">
 
     <div class="sec">
-      <div class="sec-hd open" onclick="toggleSec(this)"><span>🔷 オペレーションユニット</span><span class="arr">▶</span></div>
+      <div class="sec-hd open" onclick="toggleSec(this)"><span><img src="data:image/png;base64,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" style="width:18px;height:18px;vertical-align:middle;border-radius:3px;margin-right:2px;">オペレーションユニット</span><span class="arr">▶</span></div>
       <div class="sec-bd open">
         <div class="row">
           <div class="f"><label>幅 (mm)</label><input type="number" id="ou-w" value="970" min="100" max="3000" oninput="render()"></div>
@@ -414,7 +416,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     </div>
 
     <div class="sec">
-      <div class="sec-hd" onclick="toggleSec(this)"><span>🏥 手術台</span><span class="arr">▶</span></div>
+      <div class="sec-hd" onclick="toggleSec(this)"><span>🛏️ 手術台</span><span class="arr">▶</span></div>
       <div class="sec-bd">
         <!-- 手術台プリセット -->
         <div class="f">
@@ -622,7 +624,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
     <span style="margin-left:16px">📐 ガイド線／手術台:</span>
     <span class="info-badge" id="rel-ang-badge">—</span>
     <span id="rel-ang-txt">—</span>
-    <span style="margin-left:auto">🏥 手術台角度: <span id="tbl-ang-s">0.0°</span></span>
+    <span style="margin-left:auto">🛏️ 手術台角度: <span id="tbl-ang-s">0.0°</span></span>
     <span>📐 傾斜: <span id="tilt-s">なし</span></span>
   </div>
   <div class="status-row" id="measure-row" style="display:none;background:rgba(250,204,21,0.07);border-top:1px solid var(--border)">
@@ -716,8 +718,8 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
       <tr><td>1本指ドラッグ</td><td>モードに応じてOU移動 / 台移動 / OU回転 / 視点スクロール</td></tr>
       <tr><th colspan="2" style="padding-top:10px">🎛 モード切替（画面左下）</th></tr>
       <tr><td>🖐 視点移動</td><td>1本指ドラッグで視点をスクロール。矢印パッドでも操作可</td></tr>
-      <tr><td>🔷 OU移動</td><td>1本指ドラッグ または 矢印パッドでOUを移動</td></tr>
-      <tr><td>🏥 台移動</td><td>1本指ドラッグ または 矢印パッドで手術台を移動</td></tr>
+      <tr><td><img src="data:image/png;base64,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" style="width:18px;height:18px;vertical-align:middle;border-radius:3px;margin-right:2px;">OU移動</td><td>1本指ドラッグ または 矢印パッドでOUを移動</td></tr>
+      <tr><td>🛏️ 台移動</td><td>1本指ドラッグ または 矢印パッドで手術台を移動</td></tr>
       <tr><td>🔄 OU回転</td><td>↺↻ボタンでOU回転。微調整（0.5°）/ 大回転（10°）切替可</td></tr>
       <tr><th colspan="2" style="padding-top:10px">⚡ ヘッダーボタン</th></tr>
       <tr><td>⚡ 自動整列</td><td>カメラがポートに重なるよう OU を自動移動</td></tr>
@@ -728,7 +730,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
       <tr><td>📏 距離計測</td><td>計測モードON → 1点目タップ → 2点目タップで距離を表示。もう一度タップでリセット</td></tr>
       <tr><td>📍 ポート追加</td><td>モードON → キャンバスをタップしてポートを配置。サイドバーでラベル・色・サイズを設定</td></tr>
       <tr><td>🖊 ペイント</td><td>点・テキスト・消しゴムで書き込み。Undoで取り消し可</td></tr>
-      <tr><th colspan="2" style="padding-top:10px">🏥 手術台プリセット</th></tr>
+      <tr><th colspan="2" style="padding-top:10px">🛏️ 手術台プリセット</th></tr>
       <tr><td>プリセットボタン</td><td>タップで手術台の寸法を適用。「＋ 現在の寸法を保存」で登録</td></tr>
     </table>
     <div class="btn-row" style="margin-top:14px">
@@ -740,7 +742,7 @@ body { overflow: hidden !important; max-width: 100vw; max-height: 100vh; }
 <!-- 手術台プリセット保存モーダル -->
 <div class="modal-bg" id="tbl-preset-modal">
   <div class="modal">
-    <h3>🏥 手術台プリセットを保存</h3>
+    <h3>🛏️ 手術台プリセットを保存</h3>
     <input type="text" id="tbl-preset-name" placeholder="例: TS7000dV / メイン手術台" value="">
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
       現在の寸法: <span id="tbl-preset-dim-preview" style="color:var(--accent)">—</span>
@@ -1890,9 +1892,7 @@ function updateStatus(d,cam){
   badge.style.color=ok?'#22c55e':warn?'#eab308':'#ef4444';
   badge.style.borderColor=badge.style.color;
   $('dist-txt').textContent=ok?'✅ 許容範囲内':warn?'⚠️ 要確認':'❌ 範囲外 – 調整が必要';
-  // スケール: 100mmが何pxか
-var _spx = Math.round(100 * VIEW.sc);
-$('scale-txt').textContent = '100mm=' + _spx + 'px';
+  $('scale-txt').textContent = '1px=100mm';
   $('ou-ang-s').textContent=gv('ou-ang').toFixed(1)+'°';
   $('ou-ang-num').value=gv('ou-ang').toFixed(1);
   $('cam-pos-s').textContent=`(${cam.x.toFixed(0)}, ${cam.y.toFixed(0)})mm`;
@@ -2867,11 +2867,32 @@ cvs.addEventListener('touchend',e=>{
 <div id="sp-wrap">
   <div id="sp-modebar">
     <div class="sp-mb sp-on" id="smb-pan"  onclick="spMode('pan')">🖐 スクロール</div>
-    <div class="sp-mb"       id="smb-ou"   onclick="spMode('ou')">🔷 OU移動</div>
-    <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🏥 台移動</div>
+    <div class="sp-mb"       id="smb-ou"   onclick="spMode('ou')"><img src="data:image/png;base64,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" style="width:18px;height:18px;vertical-align:middle;border-radius:3px;margin-right:2px;">OU</div>
+    <div class="sp-mb"       id="smb-tbl"  onclick="spMode('tbl')">🛏️ 手術台</div>
     <div class="sp-mb"       id="smb-meas" onclick="spMode('meas')" style="display:none">📏 ピン</div>
-    <div class="sp-mb"       id="smb-rot"  onclick="spMode('rot')">🔄 OU回転</div>
     <div id="smb-off" onclick="spToggleUI()" title="操作UIを非表示" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,18,0.7);border:1px solid #3a3a5c;border-radius:6px;color:#e2e8f0;font-size:20px;cursor:pointer;pointer-events:auto;margin-top:2px;margin-left:35px;-webkit-tap-highlight-color:transparent;user-select:none;flex-shrink:0;">✕</div>
+  </div>
+  <div id="sp-trotpad" class="sp-rotpad">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="color:#60a5fa;font-size:10px;font-weight:700;margin-bottom:2px;">台回転</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="sp-btn sp-rot-btn" id="spTRL" onclick="spTblRotate(+_rotStep)" style="width:64px;height:64px;font-size:22px;border-color:#60a5fa;flex-direction:column;gap:2px;">
+          <span>↺</span><span style="font-size:9px;color:#60a5fa;">左回転</span>
+        </div>
+        <div style="width:56px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+          <div id="sp-trot-angle" style="color:#60a5fa;font-size:14px;font-weight:700;min-width:48px;text-align:center;">0°</div>
+          <div style="color:#5a6480;font-size:9px;">角度</div>
+        </div>
+        <div class="sp-btn sp-rot-btn" id="spTRR" onclick="spTblRotate(-_rotStep)" style="width:64px;height:64px;font-size:22px;border-color:#60a5fa;flex-direction:column;gap:2px;">
+          <span>↻</span><span style="font-size:9px;color:#60a5fa;">右回転</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <div class="sp-btn" id="spTRSlow" onclick="spToggleStep('tbl','slow')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
+        <div class="sp-btn" id="spTRMid"  onclick="spToggleStep('tbl','mid')"  style="width:42px;height:36px;font-size:9px;border-color:#60a5fa;color:#60a5fa;">1°</div>
+        <div class="sp-btn" id="spTRFast" onclick="spToggleStep('tbl','fast')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">大回転 5°</div>
+      </div>
+    </div>
   </div>
   <div id="sp-meas-dpad">
     <div style="display:flex;gap:4px;margin-bottom:4px">
@@ -2904,8 +2925,9 @@ cvs.addEventListener('touchend',e=>{
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:4px;">
-        <div class="sp-btn" id="spRSlow" style="width:64px;height:36px;font-size:10px;border-color:#6d5acd;">微調整</div>
-        <div class="sp-btn" id="spRFast" style="width:64px;height:36px;font-size:10px;border-color:#6d5acd;">大回転</div>
+        <div class="sp-btn" id="spRSlow" onclick="spToggleStep('ou','slow')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">微調整 0.5°</div>
+        <div class="sp-btn" id="spRMid"  onclick="spToggleStep('ou','mid')"  style="width:42px;height:36px;font-size:9px;border-color:#a78bfa;color:#a78bfa;">1°</div>
+        <div class="sp-btn" id="spRFast" onclick="spToggleStep('ou','fast')" style="width:72px;height:36px;font-size:9px;white-space:nowrap;">大回転 5°</div>
       </div>
     </div>
   </div>
@@ -2920,7 +2942,8 @@ cvs.addEventListener('touchend',e=>{
   var _timer = null;
   var _dir = '';
   window.spCurrentMode = 'pan';
-  var _rotStep = 2;
+  var _rotStep = 1;
+  window._rotStep = _rotStep;
 
   function spUpdateRotAngle() {
     var ae = document.getElementById('ou-ang');
@@ -2931,7 +2954,7 @@ cvs.addEventListener('touchend',e=>{
   window.spMode = function(m) {
     _mode = m;
     window.spCurrentMode = m;
-    ['pan','ou','tbl','rot','meas'].forEach(function(k){
+    ['pan','ou','tbl','meas'].forEach(function(k){
       var b = document.getElementById('smb-'+k);
       if(b) b.className = 'sp-mb' + (k===m?' sp-on':'');
     });
@@ -2939,16 +2962,27 @@ cvs.addEventListener('touchend',e=>{
     var rotpad = document.getElementById('sp-rotpad');
     var info   = document.getElementById('sp-info');
     var center = document.getElementById('spBC');
-    var ctexts = {pan:'視点<br>移動',ou:'OU<br>移動',tbl:'台<br>移動',rot:'回転',meas:'ピン<br>移動'};
-    var itexts = {pan:'',ou:'🔷 OUをドラッグで移動',tbl:'🏥 台をドラッグで移動',rot:'🔄 ↺↻ボタンで回転',meas:'📏 パッドで計測ピンを微調整'};
-    if(dpad)  { dpad.className   = 'sp-dpad'   + (m!=='rot'&&m!=='meas'?' sp-show':''); }
+    var ctexts = {pan:'視点<br>移動',ou:'OU',tbl:'手術台',meas:'ピン<br>移動'};
+    var itexts = {pan:'',ou:'<img src="data:image/png;base64,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" style="width:18px;height:18px;vertical-align:middle;border-radius:3px;margin-right:2px;">パッドで移動・↺↻で回転',tbl:'🛏️ 手術台: パッドで移動・↺↻で回転',meas:'📏 パッドで計測ピンを微調整'};
+    // rotとtrotはdpad(移動)+rot系(回転)を両方表示
+    if(dpad)  { dpad.className   = 'sp-dpad'   + (m!=='meas'?' sp-show':''); }
     // meas専用dpad
     var measdpad = document.getElementById('sp-meas-dpad');
     if(measdpad){ measdpad.className = 'sp-dpad' + (m==='meas'?' sp-show':''); }
-    if(rotpad){ rotpad.className = 'sp-rotpad' + (m==='rot'?' sp-show':''); }
+    if(rotpad){ rotpad.className = 'sp-rotpad' + (m==='ou'?' sp-show':''); }
+    var trotpad = document.getElementById('sp-trotpad');
+    if(trotpad){ trotpad.className = 'sp-rotpad' + (m==='tbl'?' sp-show':''); }
     if(info)  { info.innerHTML=itexts[m]||''; info.className='sp-info'+(m!=='pan'?' sp-show':''); }
     if(center){ center.innerHTML=ctexts[m]||''; }
-    if(m==='rot') spUpdateRotAngle();
+    if(m==='ou') spUpdateRotAngle();
+    if(m==='tbl'){
+      var ae2=document.getElementById('tbl-ang'), disp2=document.getElementById('sp-trot-angle');
+      if(ae2&&disp2) disp2.textContent=parseFloat(ae2.value||0).toFixed(1)+'°';
+      if(typeof updateRotStepUI!=='undefined') updateRotStepUI('tbl', typeof _tblRotStep!=='undefined'?_tblRotStep:1);
+    }
+    if(m==='ou'){
+      if(typeof updateRotStepUI!=='undefined') updateRotStepUI('ou', typeof _ouRotStep!=='undefined'?_ouRotStep:1);
+    }
   };
 
   function spStep(dir) {
@@ -2978,14 +3012,14 @@ cvs.addEventListener('touchend',e=>{
       if(xe)xe.value=(parseFloat(xe.value||0)+w.x).toFixed(1);
       if(ye)ye.value=(parseFloat(ye.value||0)+w.y).toFixed(1);
       render();
-    } else if(_mode==='tbl'){
+    } else if(_mode==='tbl'||_mode==='tbl'){
       var tA=d2r(parseFloat((document.getElementById('tbl-ang')||{value:0}).value)||0);
       var w2=rot(lx,ly,tA);
       var xe2=document.getElementById('tbl-x'),ye2=document.getElementById('tbl-y');
       if(xe2)xe2.value=(parseFloat(xe2.value||0)+w2.x).toFixed(1);
       if(ye2)ye2.value=(parseFloat(ye2.value||0)+w2.y).toFixed(1);
       render();
-    } else if(_mode==='rot'){
+    } else if(_mode==='ou'){
       var delta=(lx>0||ly>0)?_rotStep:-_rotStep;
       var ae=document.getElementById('ou-ang'),an=document.getElementById('ou-ang-num');
       if(ae){var nv=Math.max(-180,Math.min(180,parseFloat(ae.value||0)+delta));ae.value=nv;if(an)an.value=nv.toFixed(1);render();spUpdateRotAngle();}
@@ -3044,7 +3078,8 @@ cvs.addEventListener('touchend',e=>{
     if(!el) return;
     el.addEventListener('touchstart', function(e){
       e.preventDefault(); e.stopPropagation();
-      _rotStep = isFast ? 10 : 0.5;
+      _rotStep = isFast ? 5 : 1;
+      window._rotStep = _rotStep;
       el.style.borderColor = '#00d4ff';
     },{passive:false});
     el.addEventListener('touchend', function(e){
@@ -3094,12 +3129,12 @@ cvs.addEventListener('touchend',e=>{
         if(xe)xe.value=(_spOUX+dx/sc).toFixed(1);
         if(ye)ye.value=(_spOUY-dy/sc).toFixed(1);
         render();
-      } else if(_mode==='tbl'){
+      } else if(_mode==='tbl'||_mode==='tbl'){
         var xe2=document.getElementById('tbl-x'),ye2=document.getElementById('tbl-y');
         if(xe2)xe2.value=(_spTblX+dx/sc).toFixed(1);
         if(ye2)ye2.value=(_spTblY-dy/sc).toFixed(1);
         render();
-      } else if(_mode==='rot'){
+      } else if(_mode==='ou'){
         var nv=Math.max(-180,Math.min(180,_spAng+dx*0.4));
         var ae=document.getElementById('ou-ang'),an=document.getElementById('ou-ang-num');
         if(ae){ae.value=nv;if(an)an.value=nv.toFixed(1);render();}
@@ -3466,6 +3501,59 @@ function onObjFillNone(){
     op.value = 20;
     op.disabled = false;
   }
+}
+
+function spTblRotate(delta){
+  var ae=document.getElementById('tbl-ang'), an=document.getElementById('tbl-ang-num');
+  if(!ae) return;
+  // deltaの符号のみ使い、_tblRotStepを適用
+  var step = (typeof _tblRotStep !== 'undefined') ? _tblRotStep : 1;
+  var nv=Math.max(-180,Math.min(180,parseFloat(ae.value||0)+(delta>0?step:-step)));
+  ae.value=nv; if(an) an.value=nv.toFixed(1);
+  var disp=document.getElementById('sp-trot-angle');
+  if(disp) disp.textContent=nv.toFixed(1)+'°';
+  render();
+}
+
+function spTblRotStep(s){
+  _rotStep=s;
+  window._rotStep=s;
+  var slow=document.getElementById('spTRSlow'), fast=document.getElementById('spTRFast');
+  if(slow){ slow.style.borderColor=s===0.5?'#60a5fa':''; slow.style.color=s===0.5?'#60a5fa':''; }
+  if(fast){ fast.style.borderColor=s===10?'#60a5fa':''; fast.style.color=s===10?'#60a5fa':''; }
+}
+
+// 回転ステップのON/OFF（ou/tbl共通）
+var _ouRotStep  = 1;  // OUの現在のステップ
+var _tblRotStep = 1;  // 台の現在のステップ
+
+function spToggleStep(target, mode){
+  // target: 'ou' or 'tbl', mode: 'slow'(0.5) / 'mid'(1) / 'fast'(5)
+  var steps = {slow:0.5, mid:1, fast:5};
+  var step = steps[mode];
+  if(target==='ou'){
+    // 同じボタンを再タップでOFF→1°に戻る
+    _ouRotStep = (_ouRotStep===step && mode!=='mid') ? 1 : step;
+    _rotStep = _ouRotStep;
+    window._rotStep = _rotStep;
+    updateRotStepUI('ou', _ouRotStep);
+  } else {
+    _tblRotStep = (_tblRotStep===step && mode!=='mid') ? 1 : step;
+    updateRotStepUI('tbl', _tblRotStep);
+  }
+}
+
+function updateRotStepUI(target, step){
+  var prefix = target==='ou' ? 'spR' : 'spTR';
+  var color  = target==='ou' ? '#a78bfa' : '#60a5fa';
+  var map = {slow:0.5, mid:1, fast:5};
+  ['Slow','Mid','Fast'].forEach(function(k){
+    var el = document.getElementById(prefix+k);
+    if(!el) return;
+    var isOn = map[k.toLowerCase()]===step;
+    el.style.borderColor = isOn ? color : '';
+    el.style.color       = isOn ? color : '';
+  });
 }
 function resetToInitial(){
   // カスタム初期設定があればそちらを使用
